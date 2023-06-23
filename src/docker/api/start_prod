@@ -1,0 +1,4 @@
+#!/bin/bash
+
+python3 -m scripts.migrate
+gunicorn main:app --bind "${API_HOST}:${API_PORT}" --reload --workers=2 --timeout=300 --worker-class uvicorn.workers.UvicornWorker

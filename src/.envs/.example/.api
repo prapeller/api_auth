@@ -1,0 +1,10 @@
+DEBUG=False
+DOCKER=False
+
+API_HOST=127.0.0.1
+API_PORT=8080
+
+PROJECT_NAME=auth
+DOCS_URL=docs
+
+AUTH_SECRET=topsecret

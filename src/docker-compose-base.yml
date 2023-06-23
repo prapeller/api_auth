@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  postgres_auth:
+    restart: always
+    build:
+      context: .
+      dockerfile: ./docker/postgres/Dockerfile
+    container_name: postgres_auth
+    volumes:
+      - local_postgres_data:/var/lib/postgresql/data
+      - local_postgres_data_backups:/staticfiles/backups
+    networks:
+      - local_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  redis_auth:
+    build:
+      context: .
+      dockerfile: ./docker/redis/Dockerfile
+    container_name: redis_auth
+    networks:
+      - local_network
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli", "ping", "|", "grep", "PONG" ]
+      interval: 1s
+      retries: 30
+
+  api_auth:
+    build:
+      context: .
+      dockerfile: ./docker/api/Dockerfile
+    container_name: api_auth
+    volumes:
+      - local_postgres_data_backups:/app/staticfiles/backups
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+      - .:/app
+    expose:
+      - "8080"
+    depends_on:
+      postgres_auth:
+        condition: service_healthy
+      redis_auth:
+        condition: service_healthy
+    networks:
+      - local_network
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "-f", "http://api_auth:8080/docs" ]
+      interval: 1s
+      retries: 5
+
+
+networks:
+  local_network:
+    driver: bridge
+
+volumes:
+  local_postgres_data: { }
+  local_postgres_data_backups: { }
+  local_elastic_search_data: { }
+  static_volume:
+  media_volume:

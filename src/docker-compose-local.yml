@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  postgres_auth:
+    env_file:
+      - ./.envs/.docker-compose-local/.postgres
+    ports:
+      - "5432:5432"
+
+  redis_auth:
+    env_file:
+      - ./.envs/.docker-compose-local/.redis
+    ports:
+      - "6379:6379"
+
+  api_auth:
+    build:
+      args:
+        - BUILD_ENV=local
+    command: /start_local
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./.envs/.docker-compose-local/.postgres
+      - ./.envs/.docker-compose-local/.api
+      - ./.envs/.docker-compose-local/.redis
+
+
+  tests_auth:
+    build:
+      context: .
+      dockerfile: ./docker/tests/Dockerfile
+      args:
+        - BUILD_ENV=local
+    command: /start
+    container_name: tests
+    volumes:
+      - .:/app
+    env_file:
+      - ./.envs/.docker-compose-local/.tests
+      - ./.envs/.docker-compose-local/.redis
+    depends_on:
+      postgres_auth:
+        condition: service_healthy
+      redis_auth:
+        condition: service_healthy
+      api_auth:
+        condition: service_healthy
+    networks:
+      - local_network
