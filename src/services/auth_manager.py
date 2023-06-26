@@ -1,6 +1,8 @@
 import datetime as dt
 import logging
 
+import requests
+
 from core.config import settings
 from core.enums import TokenTypesEnum, RolesNamesEnum, OAuthTypesEnum
 from core.exceptions import InvalidCredentialsException
@@ -53,14 +55,14 @@ class AuthManager():
         session_ser = SessionReadUserSerializer.from_orm(session_db)
 
         token_pair = create_token_pair(
-                    user_id=session_ser.user.id,
-                    email=session_ser.user.email,
-                    permissions=session_ser.user.permissions_names,
-                    session_id=session_ser.id,
-                    ip=session_ser.ip,
-                    useragent=session_ser.useragent,
-                    oauth_type=oauth_type,
-                    oauth_token=oauth_token
+            user_id=session_ser.user.id,
+            email=session_ser.user.email,
+            permissions=session_ser.user.permissions_names,
+            session_id=session_ser.id,
+            ip=session_ser.ip,
+            useragent=session_ser.useragent,
+            oauth_type=oauth_type,
+            oauth_token=oauth_token
         )
 
         # cache session refresh token
@@ -91,6 +93,18 @@ class AuthManager():
                 await self.cache.delete(session_db.id)
                 logger.info('_deactivate_session_from_request: deleted from cache')
 
+    async def validate_google_token(self, token: str) -> dict | None:
+        token_validation_endpoint = 'https://www.googleapis.com/oauth2/v3/tokeninfo'
+        params = {'access_token': token}
+
+        response = requests.get(token_validation_endpoint, params=params)
+
+        if response.status_code == 200:
+            token_info = response.json()
+            return token_info
+        else:
+            return None
+
     async def verify_token(self,
                            token: str,
                            session_from_request: SessionFromRequestSchema) -> str | None:
@@ -104,6 +118,13 @@ class AuthManager():
         token_schema = TokenReadSchema.from_jwt(token)
         if token_schema is None:
             return None
+
+        if token_schema.oauth_type == OAuthTypesEnum.google:
+            token = token_schema.oauth_token
+            token_info = await self.validate_google_token(token_schema.oauth_token)
+            if token_info is None:
+                return None
+
         if session_from_request.ip != token_schema.ip or \
                 session_from_request.useragent != token_schema.useragent:
             logger.error(f'verify_token: {session_from_request=:} doesnt match {token_schema=:}')
@@ -137,7 +158,7 @@ class AuthManager():
 
         if oauth_type == OAuthTypesEnum.local:
             if not password_is_verified(user_login_schema.password, user.password):
-                logger.info(f"can't authenticate {user_login_schema.email=:}")
+                logger.info(f"login: can't authenticate {user_login_schema.email=:}")
                 raise InvalidCredentialsException
 
         await self._deactivate_session_from_request(session_schema)
@@ -147,7 +168,7 @@ class AuthManager():
                                                 oauth_type=oauth_type,
                                                 oauth_token=oauth_token,
                                                 )
-        logger.info(f'auth_manager.login: created {token_pair=:}')
+        logger.info(f'login: created {token_pair=:}')
 
         return token_pair
 
@@ -162,10 +183,10 @@ class AuthManager():
         session_db = self.repo.get(SessionModel, id=session_id, is_active=True)
         if session_db:
             self.repo.update(session_db, {'is_active': False})
-            logger.info(f'auth_manager.logout: updated {session_db=:}')
+            logger.info(f'logout: updated {session_db=:}')
 
         await self.cache.delete(session_id)
-        logger.info(f'auth_manager.logout: deleted from cache by {session_id=:}')
+        logger.info(f'logout: deleted from cache by {session_id=:}')
 
     async def logout_all(self, access_token: str):
         """
@@ -179,7 +200,7 @@ class AuthManager():
         for session in user.active_sessions:
             self.repo.update(session, {'is_active': False})
             await self.cache.delete(session.id)
-        logger.info(f'auth_manager.logout_all: for {user=:} deleted all sessions')
+        logger.info(f'logout_all: for {user=:} deactivated all sessions db, deleted all sessions cached')
 
     async def refresh(self, refresh_token: str) -> TokenPairEncodedSerializer:
         """
@@ -193,6 +214,8 @@ class AuthManager():
                                        session_id=refresh_token_schema.session_id,
                                        ip=refresh_token_schema.ip,
                                        useragent=refresh_token_schema.useragent,
+                                       oauth_type=refresh_token_schema.oauth_type,
+                                       oauth_token=refresh_token_schema.oauth_token,
                                        )
         await self.cache.set(refresh_token_schema.session_id,
                              token_pair.refresh_token,
