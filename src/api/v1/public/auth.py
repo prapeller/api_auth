@@ -15,20 +15,17 @@ from services.auth_manager import AuthManager
 router = fa.APIRouter()
 
 
-@router.post("/register",
+@router.post('/register',
              response_model=UserReadSerializer,
              responses={
                  fa.status.HTTP_422_UNPROCESSABLE_ENTITY: {'detail': ResponseDetailEnum.invalid_credentials}
              })
 async def auth_register(
         user_ser: UserCreateSerializer,
-        repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency),
+        auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
+
 ):
-    user = user_ser.create(repo)
-    registered_role = repo.get(RoleModel, name=RolesNamesEnum.registered)
-    user.roles.append(registered_role)
-    repo.session.commit()
-    repo.session.refresh(user)
+    user = await auth_manager.register(user_ser)
     return user
 
 

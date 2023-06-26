@@ -175,3 +175,11 @@ class AuthManager():
                              token_pair.refresh_token,
                              ex=dt.timedelta(minutes=settings.REFRESH_TOKEN_EXP_MIN))
         return token_pair
+
+    async def register(self, user_ser: UserCreateSerializer):
+        user = user_ser.create(self.repo)
+        registered_role = self.repo.get(RoleModel, name=RolesNamesEnum.registered)
+        user.roles.append(registered_role)
+        self.repo.session.commit()
+        self.repo.session.refresh(user)
+        return user
