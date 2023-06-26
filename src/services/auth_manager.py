@@ -2,8 +2,9 @@ import datetime as dt
 import logging
 
 from core.config import settings
-from core.enums import TokenTypesEnum
-from core.exceptions import InvalidCredentialsException, UnauthorizedException
+from core.enums import TokenTypesEnum, RolesNamesEnum, OAuthTypesEnum
+from core.exceptions import InvalidCredentialsException
+from db.models.role import RoleModel
 from db.models.session import SessionModel
 from db.models.user import UserModel
 from db.repository import SqlAlchemyRepository
@@ -13,7 +14,7 @@ from db.serializers.session import (
     SessionFromRequestSchema
 )
 from db.serializers.token import TokenPairEncodedSerializer, TokenReadSchema
-from db.serializers.user import UserLoginSchema
+from db.serializers.user import UserLoginSchema, UserCreateSerializer
 from services.cache import RedisCache
 from services.hasher import password_is_verified
 from services.jwt_manager import create_token_pair
@@ -31,9 +32,13 @@ class AuthManager():
         self.repo = repo
         self.cache = cache
 
-    async def _create_session(self,
-                              user: UserModel,
-                              session_schema: SessionFromRequestSchema) -> TokenPairEncodedSerializer:
+    async def _create_session(
+            self,
+            user: UserModel,
+            session_schema: SessionFromRequestSchema,
+            oauth_type=OAuthTypesEnum.local,
+            oauth_token=''
+    ) -> TokenPairEncodedSerializer:
         """
         create session in db
         create token pair based on user and session data
@@ -47,12 +52,16 @@ class AuthManager():
         session_db: SessionModel = self.repo.create(SessionModel, session_create_ser)
         session_ser = SessionReadUserSerializer.from_orm(session_db)
 
-        token_pair = create_token_pair(session_ser.user.id,
-                                       session_ser.user.email,
-                                       session_ser.user.permissions_names,
-                                       session_ser.id,
-                                       session_ser.ip,
-                                       session_ser.useragent)
+        token_pair = create_token_pair(
+                    user_id=session_ser.user.id,
+                    email=session_ser.user.email,
+                    permissions=session_ser.user.permissions_names,
+                    session_id=session_ser.id,
+                    ip=session_ser.ip,
+                    useragent=session_ser.useragent,
+                    oauth_type=oauth_type,
+                    oauth_token=oauth_token
+        )
 
         # cache session refresh token
         await self.cache.set(session_ser.id,
@@ -75,40 +84,47 @@ class AuthManager():
                                    is_active=True)
         if session_db:
             session_db = self.repo.update(session_db, {'is_active': False})
-            logger.info(f'auth_manager._deactivate_session_from_request: udpated {session_db=:}')
+            logger.info(f'_deactivate_session_from_request: updated {session_db=:}')
 
             session_cached = await self.cache.get(session_db.id)
             if session_cached:
                 await self.cache.delete(session_db.id)
-                logger.info('auth_manager._deactivate_session_from_request: deleted from cache')
+                logger.info('_deactivate_session_from_request: deleted from cache')
 
     async def verify_token(self,
                            token: str,
-                           session_from_request: SessionFromRequestSchema) -> None:
+                           session_from_request: SessionFromRequestSchema) -> str | None:
         """
-        raise unauthorized exception
+        return provided token as it is or
+        return None
             -if token session data doesn't match to session_from_request data
             -if there is no refresh_token cached
             -if token_provided is refresh_token - and token_provided != refresh_token cached
         """
         token_schema = TokenReadSchema.from_jwt(token)
+        if token_schema is None:
+            return None
         if session_from_request.ip != token_schema.ip or \
                 session_from_request.useragent != token_schema.useragent:
-            logger.error(f'auth_manager.verify_token: {session_from_request=:} doesnt match {token_schema=:}')
-            raise UnauthorizedException
+            logger.error(f'verify_token: {session_from_request=:} doesnt match {token_schema=:}')
+            return None
 
         refresh_token_cached = await self.cache.get(token_schema.session_id)
         if refresh_token_cached is None:
-            logger.error(f'auth_manager.verify_token: theres no refresh_token by {token_schema.session_id=:}')
-            raise UnauthorizedException
+            logger.error(f'verify_token: theres no refresh_token by {token_schema.session_id=:}')
+            return None
 
         if token_schema.type == TokenTypesEnum.refresh:
             if refresh_token_cached.decode('utf-8') != token:
-                raise UnauthorizedException
+                return None
+
+        return token
 
     async def login(self,
                     user_login_schema: UserLoginSchema,
                     session_schema: SessionFromRequestSchema,
+                    oauth_type: OAuthTypesEnum = OAuthTypesEnum.local,
+                    oauth_token='',
                     ) -> TokenPairEncodedSerializer:
         """
         authenticate user with user_login_serializer data
@@ -116,14 +132,19 @@ class AuthManager():
         create new user active session with session_ser data
         """
         user = self.repo.get(UserModel, email=user_login_schema.email)
-        if user is None or not password_is_verified(user_login_schema.password, user.password):
-            logger.info(f"auth_manager.login: can't authenticate {user_login_schema.email=:}")
+        if user is None:
             raise InvalidCredentialsException
 
-        await self._deactivate_session_from_request(session_schema)
-        logger.info(f'auth_manager.login: deactivated {session_schema=:}')
+        if oauth_type == OAuthTypesEnum.local:
+            if not password_is_verified(user_login_schema.password, user.password):
+                logger.info(f"can't authenticate {user_login_schema.email=:}")
+                raise InvalidCredentialsException
 
-        token_pair = await self._create_session(user, session_schema)
+        token_pair = await self._create_session(user=user,
+                                                session_schema=session_schema,
+                                                oauth_type=oauth_type,
+                                                oauth_token=oauth_token,
+                                                )
         logger.info(f'auth_manager.login: created {token_pair=:}')
 
         return token_pair
