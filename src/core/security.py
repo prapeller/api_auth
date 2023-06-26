@@ -5,22 +5,12 @@ from functools import wraps
 
 import jwt
 import requests
-from authlib.integrations.starlette_client import OAuth
 
 from core.config import settings
-from core.enums import PermissionsNamesEnum
+from core.enums import PermissionsNamesEnum, OAuthTypesEnum
 from core.exceptions import UnauthorizedException
 
 logger = logging.getLogger(__name__)
-
-oauth = OAuth()
-
-oauth.register(
-    name='google',
-    client_id=settings.GOOGLE_CLIENT_ID,
-    client_secret=settings.GOOGLE_CLIENT_SECRET,
-    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={'scope': 'openid email profile'})
 
 
 def generate_password(length=12):
@@ -29,9 +19,12 @@ def generate_password(length=12):
     return password
 
 
-def get_user_info_google(encoded_jwt_google: str) -> dict | None:
-    user_info_endpoint = "https://www.googleapis.com/oauth2/v1/userinfo"
-    headers = {"Authorization": f"Bearer {encoded_jwt_google}"}
+def get_user_info_oauth(encoded_jwt: str, oauth_type: OAuthTypesEnum) -> dict | None:
+    if oauth_type == OAuthTypesEnum.google:
+        user_info_endpoint = 'https://www.googleapis.com/oauth2/v1/userinfo'
+    elif oauth_type == OAuthTypesEnum.yandex:
+        user_info_endpoint = 'https://login.yandex.ru/info'
+    headers = {"Authorization": f"Bearer {encoded_jwt}"}
     user_info_response = requests.get(user_info_endpoint, headers=headers)
     if user_info_response.status_code == 200:
         user_info = user_info_response.json()
