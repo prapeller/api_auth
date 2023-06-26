@@ -140,6 +140,8 @@ class AuthManager():
                 logger.info(f"can't authenticate {user_login_schema.email=:}")
                 raise InvalidCredentialsException
 
+        await self._deactivate_session_from_request(session_schema)
+
         token_pair = await self._create_session(user=user,
                                                 session_schema=session_schema,
                                                 oauth_type=oauth_type,
