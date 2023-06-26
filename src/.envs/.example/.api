@@ -8,3 +8,12 @@ PROJECT_NAME=auth
 DOCS_URL=docs
 
 AUTH_SECRET=topsecret
+
+GOOGLE_CLIENT_ID=googleclientid
+GOOGLE_CLIENT_SECRET=googleclientsecret
+
+YANDEX_CLIENT_ID=yandexclientid
+YANDEX_CLIENT_SECRET=yandexclietsecret
+
+VK_CLIENT_ID=vkclietid
+VK_CLIENT_SECRET=vkclietsecret

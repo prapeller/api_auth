@@ -32,8 +32,16 @@ class Settings(pd.BaseSettings):
     REFRESH_TOKEN_EXP_MIN: int = 60 * 24 * 30
     TOKEN_ENCODE_ALGORITHM: str = 'HS256'
 
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+
+    YANDEX_CLIENT_ID: str
+    YANDEX_CLIENT_SECRET: str
+
+    VK_CLIENT_ID: str
+    VK_CLIENT_SECRET: str
+
     def __init__(self, DOCKER, DEBUG):
-        BASE_DIR = Path(__file__).resolve().parent.parent
 
         if DEBUG and DOCKER:
             super().__init__([BASE_DIR / '.envs/.docker-compose-local/.api',
