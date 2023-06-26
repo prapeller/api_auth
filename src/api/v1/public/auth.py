@@ -77,7 +77,7 @@ async def login_with_google():
 
 
 @router.get('/login-with-google-redirect')
-async def auth_callback(
+async def login_with_google_redirect(
         request: fa.Request,
         auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
         repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency),
