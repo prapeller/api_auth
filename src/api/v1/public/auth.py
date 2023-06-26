@@ -1,3 +1,4 @@
+import secrets
 from typing import Annotated
 
 import fastapi as fa
@@ -68,7 +69,6 @@ redirect_uri_google = f'http://{settings.API_HOST}:{settings.API_PORT}/api/v1/au
 
 @router.get('/login-with-google')
 async def login_with_google():
-    import secrets
     state = secrets.token_urlsafe(16)
     global stored_state
     stored_state = state
@@ -108,7 +108,8 @@ async def auth_callback(
         user_social_id_google = user_info['id']
         user = repo.get_user_social(email=user_email, social_id_google=user_social_id_google)
         if user is None:
-            user_ser = UserCreateSerializer(email=user_email, name=user_info['name'], password=generate_password(), social_id_google=user_social_id_google)
+            user_ser = UserCreateSerializer(email=user_email, name=user_info['name'], password=generate_password(),
+                                            social_id_google=user_social_id_google)
             await auth_manager.register(user_ser)
         session_schema = SessionFromRequestSchema(useragent=request.headers.get('user-agent'), ip=request.client.host)
         return await auth_manager.login(UserLoginOAuthSchema(email=user_email),
