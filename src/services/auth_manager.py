@@ -1,11 +1,10 @@
 import datetime as dt
 import logging
 
-import requests
-
 from core.config import settings
 from core.enums import TokenTypesEnum, RolesNamesEnum, OAuthTypesEnum
 from core.exceptions import InvalidCredentialsException
+from core.security import get_user_info_oauth
 from db.models.role import RoleModel
 from db.models.session import SessionModel
 from db.models.user import UserModel
@@ -93,24 +92,14 @@ class AuthManager():
                 await self.cache.delete(session_db.id)
                 logger.info('_deactivate_session_from_request: deleted from cache')
 
-    async def validate_google_token(self, token: str) -> dict | None:
-        token_validation_endpoint = 'https://www.googleapis.com/oauth2/v3/tokeninfo'
-        params = {'access_token': token}
-
-        response = requests.get(token_validation_endpoint, params=params)
-
-        if response.status_code == 200:
-            token_info = response.json()
-            return token_info
-        else:
-            return None
-
     async def verify_token(self,
                            token: str,
                            session_from_request: SessionFromRequestSchema) -> str | None:
         """
         return provided token as it is or
         return None
+            -if local service cant validate token
+            -if oauth-provider service cant validate issued token
             -if token session data doesn't match to session_from_request data
             -if there is no refresh_token cached
             -if token_provided is refresh_token - and token_provided != refresh_token cached
@@ -119,9 +108,9 @@ class AuthManager():
         if token_schema is None:
             return None
 
-        if token_schema.oauth_type == OAuthTypesEnum.google:
+        if token_schema.oauth_type != OAuthTypesEnum.local:
             token = token_schema.oauth_token
-            token_info = await self.validate_google_token(token_schema.oauth_token)
+            token_info = get_user_info_oauth(token_schema.oauth_token, oauth_type=token_schema.oauth_type)
             if token_info is None:
                 return None
 
