@@ -6,6 +6,8 @@ import pydantic as pd
 
 from core.logger import LOGGING_CONFIG
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 class Settings(pd.BaseSettings):
     PROJECT_NAME: str

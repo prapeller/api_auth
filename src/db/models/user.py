@@ -22,6 +22,9 @@ class UserModel(IdentifiedCreatedUpdated, Base):
     roles = relationship('RoleModel', secondary='user_role', back_populates='users')
     # many-to-one
     sessions = relationship('SessionModel', back_populates='user')
+    social_id_google = sa.Column(sa.String(50))
+    social_id_yandex = sa.Column(sa.String(50))
+    social_id_vk = sa.Column(sa.String(50))
 
     @hybrid_property
     def roles_ids(self):

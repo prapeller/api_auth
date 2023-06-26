@@ -26,6 +26,10 @@ class UserUpdateSerializer(pd.BaseModel):
     name: str | None = None
     is_active: bool | None = None
 
+    social_id_google: str | None = None
+    social_id_yandex: str | None = None
+    social_id_vk: str | None = None
+
     @pd.validator('email')
     def validate_unique_email(cls, email):
         """checks if user with the same email as user_ser.email already exists"""
@@ -83,6 +87,10 @@ class UserReadSessionsSerializer(UserReadSerializer):
 class UserLoginSchema(pd.BaseModel):
     email: pd.EmailStr
     password: str
+
+
+class UserLoginOAuthSchema(UserLoginSchema):
+    password: str | None = None
 
 
 from db.serializers.role import RoleReadSerializer
