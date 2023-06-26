@@ -12,6 +12,7 @@ from core.enums import OrderEnum
 from core.exceptions import BadRequestException
 from core.shared import CustomEncoder
 from db import Base as sa_BaseModel
+from db.models.user import UserModel
 
 
 class DBRepository(abc.ABC):
@@ -58,6 +59,31 @@ class SqlAlchemyRepository(DBRepository):
     def get(self, Model: type[sa_BaseModel], **kwargs) -> sa_BaseModel:
         obj = self.session.query(Model).filter_by(**kwargs).first()
         return obj
+
+    def get_user_social(self,
+                        email: pd.EmailStr,
+                        social_id_google: str | None = None,
+                        social_id_yandex: str | None = None,
+                        social_id_vk: str | None = None,
+                        ) -> UserModel | None:
+        if social_id_google is not None:
+            user = self.session.query(UserModel).filter(sa.or_(
+                UserModel.email == email,
+                UserModel.social_id_google == social_id_google,
+            )).first()
+        elif social_id_yandex is not None:
+            user = self.session.query(UserModel).filter(sa.or_(
+                UserModel.email == email,
+                UserModel.social_id_yandex == social_id_yandex,
+            )).first()
+        elif social_id_vk is not None:
+            user = self.session.query(UserModel).filter(sa.or_(
+                UserModel.email == email,
+                UserModel.social_id_vk == social_id_vk,
+            )).first()
+        else:
+            raise ValueError('at least one social_id required')
+        return user
 
     def get_all(self, Model: type[sa_BaseModel]) -> list[sa_BaseModel]:
         objs = self.session.query(Model).all()
