@@ -79,4 +79,6 @@ async def verified_access_token_dependency(request: fa.Request,
                                            ):
     session_from_request = SessionFromRequestSchema(useragent=request.headers.get("user-agent"), ip=request.client.host)
     token = await auth_manager.verify_token(token, session_from_request)
+    if token is None:
+        raise UnauthorizedException
     return token
