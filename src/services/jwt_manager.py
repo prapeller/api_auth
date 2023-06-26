@@ -74,5 +74,5 @@ def create_token_pair(
                                  oauth_type=oauth_type,
                                  oauth_token=oauth_token)
     token_pair = TokenPairEncodedSerializer(access_token=access_token, refresh_token=refresh_token)
-    logger.info(f'jwt_manager.create_token_pair: created {token_pair=:}')
+    logger.info(f'create_token_pair: created {token_pair=:}')
     return token_pair
