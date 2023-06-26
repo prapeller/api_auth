@@ -32,18 +32,18 @@ class RedisCache(Cache):
     async def set(self, key: str, data: Any, ex: int | dt.timedelta) -> None:
         try:
             await self.redis.set(key, data, ex=ex)
-            logger.info('redis_cache: by key= %s, set data= %s, ex= %s', key, data, ex)
+            logger.info('set: by key= %s, set data= %s, ex= %s', key, data, ex)
         except RedisError as e:
-            logger.error('redis_cache: by key= %s, failed to set data= %s, error= %s', key, data, e)
+            logger.error('set: by key= %s, failed to set data= %s, error= %s', key, data, e)
 
     async def get(self, key: str) -> bytes | None:
         data = None
         try:
             data = await self.redis.get(key)
             if data is not None:
-                logger.info('redis_cache: by key= %s, get data= %s', key, data)
+                logger.info('get: by key= %s, data= %s', key, data)
         except RedisError as e:
-            logger.error('redis_cache: by key= %s, failed to get data= %s, error= %s', key, data, e)
+            logger.error('get: by key= %s, failed to get data= %s, error= %s', key, data, e)
         return data
 
     async def delete(self, key: str) -> None:
@@ -52,6 +52,6 @@ class RedisCache(Cache):
             data = await self.redis.get(key)
             if data is not None:
                 await self.redis.delete(key)
-                logger.info('redis_cache: by key= %s, deleted data: %s', key, data)
+                logger.info('delete: by key= %s, deleted data: %s', key, data)
         except RedisError as e:
-            logger.error('redis_cache: by key= %s, failed to delete data= %s, error= %s', key, data, e)
+            logger.error('delete: by key= %s, failed to delete data= %s, error= %s', key, data, e)
