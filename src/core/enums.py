@@ -110,3 +110,10 @@ class MethodsEnum(str, Enum):
     post = 'post'
     put = 'put'
     delete = 'delete'
+
+
+class OAuthTypesEnum(str, Enum):
+    local = 'local'
+    google = 'google'
+    yandex = 'yandex'
+    vk = 'vk'
