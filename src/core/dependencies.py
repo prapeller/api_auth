@@ -1,5 +1,5 @@
 import fastapi as fa
-from fastapi.security import OAuth2PasswordBearer, OAuth2AuthorizationCodeBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2
 from redis.asyncio import Redis
 
 from core.exceptions import UnauthorizedException
@@ -52,13 +52,21 @@ async def pagination_params_dependency(
 
 oauth2_scheme_local = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
-oauth2_scheme_google = OAuth2AuthorizationCodeBearer(
-    authorizationUrl='https://accounts.google.com/o/oauth2/v2/auth',
-    tokenUrl='https://oauth2.googleapis.com/token',
-    scopes={
-        'openid': 'OpenID scope for authentication',
-        'email': 'Email scope for accessing user email',
-        'profile': 'Profile scope for accessing user profile information',
+oauth2_scheme_providers = OAuth2(
+    flows={
+        "login_with_google": {
+            "authorizationUrl": "/api/v1/auth/login-with-google",
+            "tokenUrl": "https://oauth2.googleapis.com/token",
+            "scopes": {
+                "openid": "OpenID scope for authentication",
+                "email": "Email scope for accessing user email",
+                "profile": "Profile scope for accessing user profile information",
+            },
+        },
+        "login_with_yandex": {
+            "authorizationUrl": "/api/v1/auth/login-with-yandex",
+            "tokenUrl": "https://oauth.yandex.com/token",
+        },
     },
 )
 
@@ -66,6 +74,8 @@ oauth2_scheme_google = OAuth2AuthorizationCodeBearer(
 async def get_current_user_dependency(access_token: str = fa.Depends(oauth2_scheme_local),
                                       repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency)):
     access_token_schema = TokenReadSchema.from_jwt(access_token)
+    if access_token_schema is None:
+        raise UnauthorizedException
     current_user = repo.get(UserModel, id=access_token_schema.sub)
     if current_user is None:
         raise UnauthorizedException
@@ -73,12 +83,12 @@ async def get_current_user_dependency(access_token: str = fa.Depends(oauth2_sche
 
 
 async def verified_access_token_dependency(request: fa.Request,
-                                           token: str = fa.Depends(oauth2_scheme_local),
-                                           token_google: str = fa.Depends(oauth2_scheme_google),
+                                           access_token: str = fa.Depends(oauth2_scheme_local),
+                                           _: str = fa.Depends(oauth2_scheme_providers),
                                            auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
                                            ):
     session_from_request = SessionFromRequestSchema(useragent=request.headers.get("user-agent"), ip=request.client.host)
-    token = await auth_manager.verify_token(token, session_from_request)
-    if token is None:
+    access_token = await auth_manager.verify_token(access_token, session_from_request)
+    if access_token is None:
         raise UnauthorizedException
-    return token
+    return access_token
