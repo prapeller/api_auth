@@ -1,5 +1,5 @@
 import fastapi as fa
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2AuthorizationCodeBearer
 from redis.asyncio import Redis
 
 from core.exceptions import UnauthorizedException
@@ -50,12 +50,21 @@ async def pagination_params_dependency(
     }
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme_local = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+oauth2_scheme_google = OAuth2AuthorizationCodeBearer(
+    authorizationUrl='https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl='https://oauth2.googleapis.com/token',
+    scopes={
+        'openid': 'OpenID scope for authentication',
+        'email': 'Email scope for accessing user email',
+        'profile': 'Profile scope for accessing user profile information',
+    },
+)
 
 
-async def get_current_user_dependency(access_token: str = fa.Depends(oauth2_scheme),
-                                      repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency),
-                                      ):
+async def get_current_user_dependency(access_token: str = fa.Depends(oauth2_scheme_local),
+                                      repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency)):
     access_token_schema = TokenReadSchema.from_jwt(access_token)
     current_user = repo.get(UserModel, id=access_token_schema.sub)
     if current_user is None:
@@ -64,8 +73,10 @@ async def get_current_user_dependency(access_token: str = fa.Depends(oauth2_sche
 
 
 async def verified_access_token_dependency(request: fa.Request,
-                                           access_token: str = fa.Depends(oauth2_scheme),
-                                           auth_manager: AuthManager = fa.Depends(auth_manager_dependency)):
+                                           token: str = fa.Depends(oauth2_scheme_local),
+                                           token_google: str = fa.Depends(oauth2_scheme_google),
+                                           auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
+                                           ):
     session_from_request = SessionFromRequestSchema(useragent=request.headers.get("user-agent"), ip=request.client.host)
-    await auth_manager.verify_token(access_token, session_from_request)
-    return access_token
+    token = await auth_manager.verify_token(token, session_from_request)
+    return token
