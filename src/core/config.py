@@ -38,9 +38,6 @@ class Settings(pd.BaseSettings):
     YANDEX_CLIENT_ID: str
     YANDEX_CLIENT_SECRET: str
 
-    VK_CLIENT_ID: str
-    VK_CLIENT_SECRET: str
-
     def __init__(self, DOCKER, DEBUG):
 
         if DEBUG and DOCKER:
