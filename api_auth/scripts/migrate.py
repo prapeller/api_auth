@@ -26,7 +26,7 @@ if __name__ == '__main__':
     if message is not None:
         try:
             to_migrate_version_index = int(message)
-        except Exception as e:
+        except ValueError:
             raise ValueError('it should be index number to migrate to, use (-m version_index_int)')
         current_version_index = get_current_version_index()
         migrate(current_version_index, to_migrate_version_index)
