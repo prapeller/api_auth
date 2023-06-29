@@ -1,3 +1,10 @@
+1) https://github.com/prapeller/Auth_sprint_2
+api_auth - authorization api
+
+2) https://github.com/prapeller/Async_API_sprint_2
+api_search - search through films api, which implements authorization via auth_api
+
+
 # Проектная работа 7 спринта
 
 1. Создайте интеграцию Auth-сервиса и AsyncAPI-сервиса, используя контракт, который вы сделали в прошлом задании.
