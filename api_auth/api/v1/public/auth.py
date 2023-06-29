@@ -62,6 +62,21 @@ async def auth_refresh_access_token(
     return await auth_manager.refresh(refresh_token)
 
 
+@router.post('/verify-access-token',
+             responses={
+                 fa.status.HTTP_200_OK: {'detail': ResponseDetailEnum.ok},
+                 fa.status.HTTP_401_UNAUTHORIZED: {'detail': ResponseDetailEnum.unauthorized},
+             })
+async def auth_verify_access_token(
+        ip: str = fa.Body(...),
+        useragent: str = fa.Body(...),
+        access_token: str = fa.Body(...),
+        auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
+):
+    session_from_request = SessionFromRequestSchema(useragent=useragent, ip=ip)
+    return await auth_manager.verify_token(access_token, session_from_request)
+
+
 # Store the state value in memory for demonstration purposes
 stored_state = None
 redirect_uri_google = f'http://{settings.API_HOST}:{settings.API_PORT}/api/v1/auth/login-with-google-redirect'
