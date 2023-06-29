@@ -35,4 +35,4 @@ services:
     depends_on:
       - api_auth
     networks:
-      - local_network
+      - local_network_auth

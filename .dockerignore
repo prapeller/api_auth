@@ -135,10 +135,10 @@ dmypy.json
 my_files/
 
 # Project files should stay locally only
-src/.envs/.prod*
-src/.envs/.local*
-src/.envs/.docker-compose-local*
-src/staticfiles/backups/*
+api_auth/.envs/.prod*
+api_auth/.envs/.local*
+api_auth/.envs/.docker-compose-local*
+api_auth/staticfiles/backups/*
 
 README.md
 **/.git

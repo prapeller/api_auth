@@ -47,4 +47,4 @@ services:
       api_auth:
         condition: service_healthy
     networks:
-      - local_network
+      - local_network_auth
