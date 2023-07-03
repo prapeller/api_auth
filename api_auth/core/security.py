@@ -47,9 +47,9 @@ def permissions(required: list[PermissionsNamesEnum]):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            access_token: str = kwargs.get('access_token')
-            if access_token:
-                token_permissions = get_token_data(access_token).get('permissions')
+            access_token_schema = kwargs.get('access_token_schema')
+            if access_token_schema:
+                token_permissions = access_token_schema.permissions
                 for permission in required:
                     if permission not in token_permissions:
                         logger.error(f'required {permission=:} not in {token_permissions=:}')

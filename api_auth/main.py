@@ -12,7 +12,7 @@ from api.v1.authorized import postgres as v1_postgres
 from api.v1.authorized import roles as v1_roles
 from api.v1.public import auth as v1_auth_public
 from core.config import settings
-from core.dependencies import verified_access_token_dependency
+from core.dependencies import verified_token_schema_dependency
 from db import init_db
 
 
@@ -36,7 +36,7 @@ app = fa.FastAPI(lifespan=lifespan,
 v1_router_public = fa.APIRouter()
 v1_router_public.include_router(v1_auth_public.router, prefix='/auth', tags=['auth'])
 
-v1_router_authorized = fa.APIRouter(dependencies=[fa.Depends(verified_access_token_dependency)])
+v1_router_authorized = fa.APIRouter(dependencies=[fa.Depends(verified_token_schema_dependency)])
 v1_router_authorized.include_router(v1_postgres.router, prefix='/postgres', tags=['postgres'])
 v1_router_authorized.include_router(v1_auth_authorized.router, prefix='/auth', tags=['auth'])
 v1_router_authorized.include_router(v1_roles.router, prefix='/roles', tags=['roles'])

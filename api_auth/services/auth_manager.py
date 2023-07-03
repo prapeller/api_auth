@@ -92,14 +92,15 @@ class AuthManager():
                 await self.cache.delete(session_db.id)
                 logger.info('_deactivate_session_from_request: deleted from cache')
 
-    async def verify_token(self,
-                           token: str,
-                           session_from_request: SessionFromRequestSchema) -> str | None:
+    async def get_verified_token_schema(
+            self,
+            token: str,
+            session_from_request: SessionFromRequestSchema) -> TokenReadSchema | None:
         """
-        return provided token as it is or
+        return provided token schema or
         return None
-            -if local service cant validate token
-            -if oauth-provider service cant validate issued token
+            -if local service cant decode token
+            -if oauth-provider service cant validate token nested inside schema
             -if token session data doesn't match to session_from_request data
             -if there is no refresh_token cached
             -if token_provided is refresh_token - and token_provided != refresh_token cached
@@ -128,7 +129,7 @@ class AuthManager():
             if refresh_token_cached.decode('utf-8') != token:
                 return None
 
-        return token
+        return token_schema
 
     async def login(self,
                     user_login_schema: UserLoginSchema,
@@ -161,13 +162,12 @@ class AuthManager():
 
         return token_pair
 
-    async def logout(self, access_token: str):
+    async def logout(self, access_token_schema: TokenReadSchema):
         """
         from token get session_id
         if session exists in db - deactivate it
         delete session from cache
         """
-        access_token_schema = TokenReadSchema.from_jwt(access_token)
         session_id = access_token_schema.session_id
         session_db = self.repo.get(SessionModel, id=session_id, is_active=True)
         if session_db:
@@ -177,14 +177,13 @@ class AuthManager():
         await self.cache.delete(session_id)
         logger.info(f'logout: deleted from cache by {session_id=:}')
 
-    async def logout_all(self, access_token: str):
+    async def logout_all(self, access_token_schema: TokenReadSchema):
         """
         from token get user and all its active sessions
         for every session:
             deactivate in db
             delete session from cache
         """
-        access_token_schema = TokenReadSchema.from_jwt(access_token)
         user: UserModel = self.repo.get(UserModel, id=access_token_schema.sub)
         for session in user.active_sessions:
             self.repo.update(session, {'is_active': False})

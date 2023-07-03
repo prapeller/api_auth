@@ -82,13 +82,13 @@ async def get_current_user_dependency(access_token: str = fa.Depends(oauth2_sche
     return current_user
 
 
-async def verified_access_token_dependency(request: fa.Request,
+async def verified_token_schema_dependency(request: fa.Request,
                                            access_token: str = fa.Depends(oauth2_scheme_local),
                                            _: str = fa.Depends(oauth2_scheme_providers),
                                            auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
                                            ):
     session_from_request = SessionFromRequestSchema(useragent=request.headers.get("user-agent"), ip=request.client.host)
-    access_token = await auth_manager.verify_token(access_token, session_from_request)
-    if access_token is None:
+    token_schema = await auth_manager.get_verified_token_schema(access_token, session_from_request)
+    if token_schema is None:
         raise UnauthorizedException
-    return access_token
+    return token_schema

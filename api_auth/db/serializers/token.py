@@ -26,8 +26,6 @@ class TokenCreateSchema(pd.BaseModel):
 
 
 class TokenReadSchema(TokenCreateSchema):
-    jti: str  # token_id
-    iat: dt.datetime  # issued_at time
 
     @classmethod
     def from_jwt(cls, encoded_jwt: str) -> typing.Union['TokenReadSchema', None]:

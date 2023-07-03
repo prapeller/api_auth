@@ -3,7 +3,7 @@ import subprocess
 
 import fastapi as fa
 
-from core.dependencies import verified_access_token_dependency
+from core.dependencies import verified_token_schema_dependency
 from core.enums import EnvEnum, PermissionsNamesEnum
 from core.security import permissions
 
@@ -13,7 +13,7 @@ router = fa.APIRouter()
 @router.post("/dump", status_code=fa.status.HTTP_201_CREATED)
 @permissions(required=[PermissionsNamesEnum.all_of_all])
 async def postgres_dump(
-        access_token: str = fa.Depends(verified_access_token_dependency),
+        access_token_schema: str = fa.Depends(verified_token_schema_dependency),
         env: EnvEnum = EnvEnum.local,
 ):
     script_path = f"{os.getcwd()}/scripts/postgres/dump.sh"
@@ -28,7 +28,7 @@ async def postgres_dump(
 @router.get("/check-dumps")
 @permissions(required=[PermissionsNamesEnum.all_of_all])
 async def postgres_check_dumps(
-        access_token: str = fa.Depends(verified_access_token_dependency),
+        access_token_schema: str = fa.Depends(verified_token_schema_dependency),
 ):
     script_path = f"{os.getcwd()}/scripts/postgres/check_dumps.sh"
     assert os.path.isfile(script_path)
@@ -42,7 +42,7 @@ async def postgres_check_dumps(
 @router.get("/download-last-dump")
 @permissions(required=[PermissionsNamesEnum.all_of_all])
 async def postgres_download_last_dump(
-        access_token: str = fa.Depends(verified_access_token_dependency),
+        access_token_schema: str = fa.Depends(verified_token_schema_dependency),
 ):
     file_path = f"{os.getcwd()}/staticfiles/backups/dump_last"
     assert os.path.isfile(file_path)
@@ -56,7 +56,7 @@ async def postgres_download_last_dump(
 async def postgres_restore_from_dump(
         dump_file: fa.UploadFile,
         env: EnvEnum = EnvEnum.local,
-        access_token: str = fa.Depends(verified_access_token_dependency),
+        access_token_schema: str = fa.Depends(verified_token_schema_dependency),
 ):
     script_path = f"{os.getcwd()}/scripts/postgres/restore_from_dump.sh"
     assert os.path.isfile(script_path)

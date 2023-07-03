@@ -3,7 +3,7 @@ import fastapi as fa
 from core.dependencies import (
     get_current_user_dependency,
     sql_alchemy_repo_dependency,
-    verified_access_token_dependency,
+    verified_token_schema_dependency,
     pagination_params_dependency
 )
 from core.enums import SessionOrderByEnum, OrderEnum
@@ -75,8 +75,7 @@ async def me_update_credentials(
 async def me_update_password(
         user_ser: UserUpdatePasswordSerializer,
         repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency),
-        access_token: str = fa.Depends(verified_access_token_dependency),
+        access_token_schema: TokenReadSchema = fa.Depends(verified_token_schema_dependency),
 ):
-    token_schema = TokenReadSchema.from_jwt(access_token)
-    user = user_ser.update_password(repo, token_schema.sub)
+    user = user_ser.update_password(repo, access_token_schema.sub)
     return user

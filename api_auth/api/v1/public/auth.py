@@ -8,10 +8,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from core.config import settings
 from core.dependencies import auth_manager_dependency, sql_alchemy_repo_dependency
 from core.enums import ResponseDetailEnum, OAuthTypesEnum
+from core.exceptions import UnauthorizedException
 from core.security import generate_password, get_user_info_oauth
 from db.repository import SqlAlchemyRepository
 from db.serializers.session import SessionFromRequestSchema
-from db.serializers.token import TokenPairEncodedSerializer
+from db.serializers.token import TokenPairEncodedSerializer, TokenReadSchema
 from db.serializers.user import UserLoginSchema, UserCreateSerializer, UserReadSerializer, UserLoginOAuthSchema
 from services.auth_manager import AuthManager
 
@@ -44,7 +45,8 @@ async def auth_login(
 ):
     user_login_schema = UserLoginSchema(email=form_data.username, password=form_data.password)
     session_schema = SessionFromRequestSchema(useragent=request.headers.get('user-agent'), ip=request.client.host)
-    return await auth_manager.login(user_login_schema, session_schema)
+    token_pair_encoded_ser = await auth_manager.login(user_login_schema, session_schema)
+    return token_pair_encoded_ser
 
 
 @router.post('/refresh-access-token',
@@ -58,11 +60,15 @@ async def auth_refresh_access_token(
         auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
 ):
     session_from_request = SessionFromRequestSchema(useragent=request.headers.get('user-agent'), ip=request.client.host)
-    await auth_manager.verify_token(refresh_token, session_from_request)
-    return await auth_manager.refresh(refresh_token)
+    token_schema = await auth_manager.get_verified_token_schema(refresh_token, session_from_request)
+    if token_schema is None:
+        raise UnauthorizedException
+    token_pair_encoded_ser = await auth_manager.refresh(refresh_token)
+    return token_pair_encoded_ser
 
 
 @router.post('/verify-access-token',
+             response_model=TokenReadSchema,
              responses={
                  fa.status.HTTP_200_OK: {'detail': ResponseDetailEnum.ok},
                  fa.status.HTTP_401_UNAUTHORIZED: {'detail': ResponseDetailEnum.unauthorized},
@@ -74,7 +80,10 @@ async def auth_verify_access_token(
         auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
 ):
     session_from_request = SessionFromRequestSchema(useragent=useragent, ip=ip)
-    return await auth_manager.verify_token(access_token, session_from_request)
+    token_schema = await auth_manager.get_verified_token_schema(access_token, session_from_request)
+    if token_schema is None:
+        raise UnauthorizedException
+    return token_schema
 
 
 # Store the state value in memory for demonstration purposes
