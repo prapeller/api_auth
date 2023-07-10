@@ -3,8 +3,8 @@ import configparser
 import os
 import tempfile
 
+import sqlalchemy as sa
 from alembic.config import Config
-from sqlalchemy import create_engine
 
 from core.config import BASE_DIR, settings
 
@@ -13,14 +13,13 @@ VERSIONS_PATH = BASE_DIR / 'alembic/versions'
 
 def get_current_version():
     updated_config = get_updated_alembic_config()
-    engine = create_engine(next(updated_config).get_main_option("sqlalchemy.url"))
+    engine = sa.create_engine(next(updated_config).get_main_option("sqlalchemy.url"))
     connection = engine.connect()
     try:
-        result = connection.execute("SELECT version_num FROM alembic_version")
+        result = connection.execute(sa.text("SELECT version_num FROM alembic_version"))
         row = result.fetchone()
         if row:
             current_version = row[0]
-            # version, number = get_
             return current_version
         else:
             return None
