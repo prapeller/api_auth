@@ -155,6 +155,6 @@ class SqlAlchemyRepository(DBRepository):
                             pagination_params) -> Query:
         order = sa.desc if order.value == 'desc' else sa.asc
         query = query.order_by(order(getattr(Model, order_by))) \
-            .offset(pagination_params["offset"]) \
-            .limit(pagination_params["limit"])
+            .offset(pagination_params['offset']) \
+            .limit(pagination_params['limit'])
         return query

@@ -50,22 +50,22 @@ async def pagination_params_dependency(
     }
 
 
-oauth2_scheme_local = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme_local = OAuth2PasswordBearer(tokenUrl='/api/v1/auth/login')
 
 oauth2_scheme_providers = OAuth2(
     flows={
-        "login_with_google": {
-            "authorizationUrl": "/api/v1/auth/login-with-google",
-            "tokenUrl": "https://oauth2.googleapis.com/token",
-            "scopes": {
-                "openid": "OpenID scope for authentication",
-                "email": "Email scope for accessing user email",
-                "profile": "Profile scope for accessing user profile information",
+        'login_with_google': {
+            'authorizationUrl': '/api/v1/auth/login-with-google',
+            'tokenUrl': 'https://oauth2.googleapis.com/token',
+            'scopes': {
+                'openid': 'OpenID scope for authentication',
+                'email': 'Email scope for accessing user email',
+                'profile': 'Profile scope for accessing user profile information',
             },
         },
-        "login_with_yandex": {
-            "authorizationUrl": "/api/v1/auth/login-with-yandex",
-            "tokenUrl": "https://oauth.yandex.com/token",
+        'login_with_yandex': {
+            'authorizationUrl': '/api/v1/auth/login-with-yandex',
+            'tokenUrl': 'https://oauth.yandex.com/token',
         },
     },
 )

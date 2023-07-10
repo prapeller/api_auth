@@ -24,7 +24,7 @@ def get_user_info_oauth(encoded_jwt: str, oauth_type: OAuthTypesEnum) -> dict | 
         user_info_endpoint = 'https://www.googleapis.com/oauth2/v1/userinfo'
     elif oauth_type == OAuthTypesEnum.yandex:
         user_info_endpoint = 'https://login.yandex.ru/info'
-    headers = {"Authorization": f"Bearer {encoded_jwt}"}
+    headers = {'Authorization': f'Bearer {encoded_jwt}'}
     user_info_response = requests.get(user_info_endpoint, headers=headers)
     if user_info_response.status_code == 200:
         user_info = user_info_response.json()

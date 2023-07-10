@@ -16,7 +16,7 @@ class CustomEncoder(json.JSONEncoder):
         if isinstance(obj, dt.datetime):
             return obj.isoformat()
 
-        if hasattr(obj.__class__, "__table__"):
+        if hasattr(obj.__class__, '__table__'):
             return self.encode_sqlalchemy_model(obj)
 
         if isinstance(obj, hybrid_property):

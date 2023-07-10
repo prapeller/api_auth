@@ -8,7 +8,7 @@ from services.auth_manager import AuthManager
 router = fa.APIRouter()
 
 
-@router.post("/logout",
+@router.post('/logout',
              responses={
                  fa.status.HTTP_200_OK: {'detail': ResponseDetailEnum.ok},
                  fa.status.HTTP_401_UNAUTHORIZED: {'detail': ResponseDetailEnum.unauthorized},
@@ -21,7 +21,7 @@ async def auth_logout(
     return {'detail': ResponseDetailEnum.ok}
 
 
-@router.post("/logout-all",
+@router.post('/logout-all',
              responses={
                  fa.status.HTTP_200_OK: {'detail': ResponseDetailEnum.ok},
                  fa.status.HTTP_401_UNAUTHORIZED: {'detail': ResponseDetailEnum.unauthorized},

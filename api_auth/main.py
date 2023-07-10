@@ -42,8 +42,8 @@ v1_router_authorized.include_router(v1_auth_authorized.router, prefix='/auth', t
 v1_router_authorized.include_router(v1_roles.router, prefix='/roles', tags=['roles'])
 v1_router_authorized.include_router(v1_me.router, prefix='/me', tags=['me'])
 
-app.include_router(v1_router_public, prefix="/api/v1")
-app.include_router(v1_router_authorized, prefix="/api/v1")
+app.include_router(v1_router_public, prefix='/api/v1')
+app.include_router(v1_router_authorized, prefix='/api/v1')
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     uvicorn.run('main:app', host=settings.API_HOST, port=settings.API_PORT, reload=True)

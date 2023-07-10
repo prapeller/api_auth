@@ -13,10 +13,10 @@ VERSIONS_PATH = BASE_DIR / 'alembic/versions'
 
 def get_current_version():
     updated_config = get_updated_alembic_config()
-    engine = sa.create_engine(next(updated_config).get_main_option("sqlalchemy.url"))
+    engine = sa.create_engine(next(updated_config).get_main_option('sqlalchemy.url'))
     connection = engine.connect()
     try:
-        result = connection.execute(sa.text("SELECT version_num FROM alembic_version"))
+        result = connection.execute(sa.text('SELECT version_num FROM alembic_version'))
         row = result.fetchone()
         if row:
             current_version = row[0]
@@ -29,17 +29,17 @@ def get_current_version():
 
 
 def get_updated_alembic_config():
-    alembic_ini_path = BASE_DIR / "alembic.ini"
+    alembic_ini_path = BASE_DIR / 'alembic.ini'
 
     # Read the alembic.ini file
     config = configparser.ConfigParser()
     config.read(alembic_ini_path)
 
     # Set the sqlalchemy.url adn script_location values
-    config.set("alembic", "sqlalchemy.url",
+    config.set('alembic', 'sqlalchemy.url',
                f'postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@'
                f'{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}')
-    config.set("alembic", "script_location", str(BASE_DIR / 'alembic'))
+    config.set('alembic', 'script_location', str(BASE_DIR / 'alembic'))
 
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_config_file:
         config.write(temp_config_file)
@@ -57,7 +57,6 @@ def get_next_version_index() -> int:
 
 def get_current_version_index():
     current_version_str = get_current_version()
-    index = 0
     versions_files = os.listdir(VERSIONS_PATH)
     for filename in versions_files:
         if filename.startswith(f'{current_version_str}_'):
