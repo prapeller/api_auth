@@ -13,13 +13,13 @@ from api.v1.authorized import roles as v1_roles
 from api.v1.public import auth as v1_auth_public
 from core.config import settings
 from core.dependencies import verified_token_schema_dependency
-from db import init_db
+from db import init_models
 
 
 @asynccontextmanager
 async def lifespan(app: fa.FastAPI):
     # startup
-    init_db()
+    init_models()
     core.dependencies.redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
     yield
     # shutdown

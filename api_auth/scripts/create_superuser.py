@@ -1,7 +1,7 @@
 import pydantic as pd
 
 from core.enums import RolesNamesEnum
-from db import init_db, engine, SessionLocal, Base
+from db import init_models, engine, SessionLocal, Base
 from db.models.role import RoleModel
 from db.repository import SqlAlchemyRepository
 from db.serializers.user import UserCreateSerializer
@@ -9,7 +9,7 @@ from scripts.create_permissions_roles import create_roles_all
 
 
 def create_superuser():
-    init_db()
+    init_models()
     Base.metadata.create_all(bind=engine)
 
     create_roles_all()

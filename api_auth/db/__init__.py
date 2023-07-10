@@ -4,10 +4,11 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from core.config import settings
 
 
-def init_db():
+def init_models():
     from db.models import user  # noqa
     from db.models import role  # noqa
     from db.models import session  # noqa
+    from db.models import social_account  # noqa
     from db.models import permission  # noqa
     from db.models import _association  # noqa
 

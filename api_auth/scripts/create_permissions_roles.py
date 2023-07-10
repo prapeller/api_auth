@@ -1,5 +1,5 @@
 from core.enums import RolesNamesEnum, PermissionsNamesEnum
-from db import SessionLocal, init_db
+from db import SessionLocal, init_models
 from db.models.permission import PermissionModel
 from db.models.role import RoleModel
 from db.repository import SqlAlchemyRepository
@@ -47,5 +47,5 @@ def create_roles_all():
 
 
 if __name__ == '__main__':
-    init_db()
+    init_models()
     create_roles_all()
