@@ -1,7 +1,6 @@
-import sqlalchemy as sa
-from sqlalchemy.orm import declarative_base, sessionmaker
-
 from core.config import settings
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 
 def init_models():
@@ -13,8 +12,8 @@ def init_models():
     from db.models import _association  # noqa
 
 
-DATABASE_URL = f'postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@' \
+DATABASE_URL = f'postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@' \
                f'{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}'
-engine = sa.create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_async_engine(DATABASE_URL, echo=True, future=True)
+SessionLocalAsync = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()

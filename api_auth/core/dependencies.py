@@ -3,9 +3,9 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2
 from redis.asyncio import Redis
 
 from core.exceptions import UnauthorizedException
-from db import SessionLocal
+from db import SessionLocalAsync
 from db.models.user import UserModel
-from db.repository import SqlAlchemyRepository
+from db.repository import SqlAlchemyRepositoryAsync
 from db.serializers.session import SessionFromRequestSchema
 from db.serializers.token import TokenReadSchema
 from services.auth_manager import AuthManager
@@ -19,12 +19,10 @@ async def redis_dependency() -> Redis:
 
 
 async def sql_alchemy_repo_dependency(
-) -> SqlAlchemyRepository:
-    repo = SqlAlchemyRepository(SessionLocal())
-    try:
+) -> SqlAlchemyRepositoryAsync:
+    async with SessionLocalAsync() as session:
+        repo = SqlAlchemyRepositoryAsync(session)
         yield repo
-    finally:
-        repo.session.close()
 
 
 async def redis_cache_dependency(
@@ -34,7 +32,7 @@ async def redis_cache_dependency(
 
 
 async def auth_manager_dependency(
-        repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency),
+        repo: SqlAlchemyRepositoryAsync = fa.Depends(sql_alchemy_repo_dependency),
         redis_cache: RedisCache = fa.Depends(redis_cache_dependency)
 ) -> AuthManager:
     return AuthManager(repo, redis_cache)
@@ -72,11 +70,11 @@ oauth2_scheme_providers = OAuth2(
 
 
 async def get_current_user_dependency(access_token: str = fa.Depends(oauth2_scheme_local),
-                                      repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency)):
+                                      repo: SqlAlchemyRepositoryAsync = fa.Depends(sql_alchemy_repo_dependency)):
     access_token_schema = TokenReadSchema.from_jwt(access_token)
     if access_token_schema is None:
         raise UnauthorizedException
-    current_user = repo.get(UserModel, id=access_token_schema.sub)
+    current_user = await repo.get(UserModel, id=access_token_schema.sub)
     if current_user is None:
         raise UnauthorizedException
     return current_user

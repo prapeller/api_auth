@@ -3,11 +3,11 @@ from http import HTTPStatus
 import pytest
 
 from core.enums import RolesNamesEnum, MethodsEnum
-from db import SessionLocal
+from db import SessionLocalAsync
 from db.models.role import RoleModel
 from db.models.session import SessionModel
 from db.models.user import UserModel
-from db.repository import SqlAlchemyRepository
+from db.repository import SqlAlchemyRepositoryAsync
 from db.serializers.token import TokenReadSchema
 from db.serializers.user import UserCreateSerializer
 from services.cache import RedisCache
@@ -28,21 +28,21 @@ user_data = {'email': 'test@mail.ru',
              'is_active': True}
 
 
-def create_test_registered_user(user_data) -> UserModel:
-    with SqlAlchemyRepository(SessionLocal()) as repo:
+async def create_test_registered_user(user_data) -> UserModel:
+    with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
         user_ser = UserCreateSerializer(**user_data)
-        user = user_ser.create(repo)
-        registered_role = repo.get(RoleModel, name=RolesNamesEnum.registered)
+        user = await user_ser.create(repo)
+        registered_role = await repo.get(RoleModel, name=RolesNamesEnum.registered)
         user.roles.append(registered_role)
-        repo.session.commit()
-        repo.session.refresh(user)
+        await repo.session.commit()
+        await repo.session.refresh(user)
         return user
 
 
-def delete_user_by_email(email) -> None:
-    with SqlAlchemyRepository(SessionLocal()) as repo:
-        user = repo.get(UserModel, email=email)
-        repo.remove(UserModel, id=user.id)
+async def delete_user_by_email(email) -> None:
+    with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
+        user = await repo.get(UserModel, email=email)
+        await repo.remove(UserModel, id=user.id)
 
 
 def get_test_login_headers_data(user_data):
@@ -80,13 +80,13 @@ async def test_post_api_v1_auth_login(body_status, redis_cache: RedisCache):
      - session was created in db
      - session was created in cache and encoded refresh_token can be accessed by session_id in access_token
      """
-    create_test_registered_user(user_data)
+    await create_test_registered_user(user_data)
     try:
         headers, data = get_test_login_headers_data(user_data)
         body, status = await body_status(LOGIN_URL, method=MethodsEnum.post, data=data, headers=headers)
         access_token_schema = TokenReadSchema.from_jwt(body['access_token'])
         session_id = access_token_schema.session_id
-        with SqlAlchemyRepository(SessionLocal()) as repo:
+        with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
             session_db = repo.get(SessionModel, id=session_id)
         refresh_token_cached = await redis_cache.get(session_id)
 
@@ -97,7 +97,7 @@ async def test_post_api_v1_auth_login(body_status, redis_cache: RedisCache):
         assert refresh_token_cached is not None
 
     finally:
-        delete_user_by_email(email=user_data['email'])
+        await delete_user_by_email(email=user_data['email'])
 
 
 async def test_post_api_v1_auth_logout_authorized(body_status, redis_cache: RedisCache):
@@ -107,7 +107,7 @@ async def test_post_api_v1_auth_logout_authorized(body_status, redis_cache: Redi
      - session was removed from cache
      """
     # login
-    create_test_registered_user(user_data)
+    await create_test_registered_user(user_data)
     try:
         headers, data = get_test_login_headers_data(user_data)
         body, status = await body_status(LOGIN_URL, method=MethodsEnum.post, data=data, headers=headers)
@@ -117,7 +117,7 @@ async def test_post_api_v1_auth_logout_authorized(body_status, redis_cache: Redi
         # logout
         auth_headers = {'Accept': 'application/json', 'Authorization': f'Bearer {access_token}'}
         body, status = await body_status(LOGOUT_URL, method=MethodsEnum.post, headers=auth_headers)
-        with SqlAlchemyRepository(SessionLocal()) as repo:
+        with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
             session_db = repo.get(SessionModel, id=session_id)
         refresh_token_cached = await redis_cache.get(session_id)
 
@@ -126,14 +126,14 @@ async def test_post_api_v1_auth_logout_authorized(body_status, redis_cache: Redi
         assert refresh_token_cached is None
 
     finally:
-        delete_user_by_email(email=user_data['email'])
+        await delete_user_by_email(email=user_data['email'])
 
 
 async def test_post_api_v1_auth_logout_unauthorized(body_status, redis_cache: RedisCache):
     """Test that route will return:
      - status 401 if unauthorized user is being logged out
      """
-    create_test_registered_user(user_data)
+    await create_test_registered_user(user_data)
     try:
         access_token = 'invalid_access_token'
         auth_headers = {'Accept': 'application/json', 'Authorization': f'Bearer {access_token}'}
@@ -141,7 +141,7 @@ async def test_post_api_v1_auth_logout_unauthorized(body_status, redis_cache: Re
 
         assert status == HTTPStatus.UNAUTHORIZED
     finally:
-        delete_user_by_email(email=user_data['email'])
+        await delete_user_by_email(email=user_data['email'])
 
 
 async def test_post_api_v1_auth_refresh_access_token_authorized(body_status, redis_cache: RedisCache):
@@ -152,7 +152,7 @@ async def test_post_api_v1_auth_refresh_access_token_authorized(body_status, red
      - session in cache still exists and can be accessed by session_id in new access_token
      - new refresh_token in cache differs from old refresh_token
      """
-    create_test_registered_user(user_data)
+    await create_test_registered_user(user_data)
     try:
         # login
         headers, data = get_test_login_headers_data(user_data)
@@ -169,7 +169,7 @@ async def test_post_api_v1_auth_refresh_access_token_authorized(body_status, red
         new_access_token = refresh_body['access_token']
         new_access_token_schema = TokenReadSchema.from_jwt(new_access_token)
         new_session_id = new_access_token_schema.session_id
-        with SqlAlchemyRepository(SessionLocal()) as repo:
+        with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
             session_db = repo.get(SessionModel, id=new_session_id)
         new_refresh_token_cached = await redis_cache.get(new_session_id)
 
@@ -179,4 +179,4 @@ async def test_post_api_v1_auth_refresh_access_token_authorized(body_status, red
         assert new_refresh_token_cached is not None
         assert old_refresh_token_cached != new_refresh_token_cached
     finally:
-        delete_user_by_email(email=user_data['email'])
+        await delete_user_by_email(email=user_data['email'])

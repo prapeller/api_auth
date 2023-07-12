@@ -9,7 +9,7 @@ from core.exceptions import UnauthorizedException
 from core.security import generate_password
 from db.models.social_account import SocialAccountModel
 from db.models.user import UserModel
-from db.repository import SqlAlchemyRepository
+from db.repository import SqlAlchemyRepositoryAsync
 from db.serializers.session import SessionFromRequestSchema
 from db.serializers.social_account import SocialAccountCreateSerializer
 from db.serializers.token import TokenPairEncodedSerializer, TokenReadSchema
@@ -107,23 +107,23 @@ async def oauth_redirect(
         oauth_type: OAuthTypesEnum,
         request: fa.Request,
         auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
-        repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency),
+        repo: SqlAlchemyRepositoryAsync = fa.Depends(sql_alchemy_repo_dependency),
 ):
     global stored_state
     oauth_token = await get_oauth_token(request, copy(stored_state), oauth_type=oauth_type)
     user_info = await get_user_info_oauth(oauth_token, oauth_type=oauth_type)
     user_email, user_name, social_id = await get_user_data(user_info, oauth_type=oauth_type)
 
-    social_account = repo.get(SocialAccountModel, social_id=social_id, social_name=oauth_type)
+    social_account = await repo.get(SocialAccountModel, social_id=social_id, social_name=oauth_type)
     if social_account is None:
-        user = repo.get(UserModel, email=user_email)
+        user = await repo.get(UserModel, email=user_email)
         if user is None:
             user_ser = UserCreateSerializer(email=user_email, name=user_name, password=generate_password())
             user = await auth_manager.register(user_ser)
             social_account_ser = SocialAccountCreateSerializer(user_id=user.id,
                                                                social_name=oauth_type,
                                                                social_id=social_id)
-            repo.create(SocialAccountModel, social_account_ser)
+            await repo.create(SocialAccountModel, social_account_ser)
     session_schema = SessionFromRequestSchema(useragent=request.headers.get('user-agent'), ip=request.client.host)
     token_pair = await auth_manager.login(UserLoginOAuthSchema(email=user_email),
                                           session_schema,

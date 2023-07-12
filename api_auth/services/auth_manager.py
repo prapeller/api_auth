@@ -7,7 +7,7 @@ from core.exceptions import InvalidCredentialsException
 from db.models.role import RoleModel
 from db.models.session import SessionModel
 from db.models.user import UserModel
-from db.repository import SqlAlchemyRepository
+from db.repository import SqlAlchemyRepositoryAsync
 from db.serializers.session import (
     SessionReadUserSerializer,
     SessionCreateSerializer,
@@ -29,7 +29,7 @@ class AuthManager():
     - verify access_token user by data from request,
     """
 
-    def __init__(self, repo: SqlAlchemyRepository, cache: RedisCache):
+    def __init__(self, repo: SqlAlchemyRepositoryAsync, cache: RedisCache):
         self.repo = repo
         self.cache = cache
 
@@ -50,7 +50,7 @@ class AuthManager():
                                                      useragent=session_schema.useragent,
                                                      ip=session_schema.ip,
                                                      )
-        session_db: SessionModel = self.repo.create(SessionModel, session_create_ser)
+        session_db: SessionModel = await self.repo.create(SessionModel, session_create_ser)
         session_ser = SessionReadUserSerializer.from_orm(session_db)
 
         token_pair = create_token_pair(
@@ -81,11 +81,11 @@ class AuthManager():
             if session_cached:
                 -deactivate session_cached
         """
-        session_db = self.repo.get(SessionModel, ip=session_schema.ip, useragent=session_schema.useragent,
-                                   is_active=True)
+        session_db = await self.repo.get(SessionModel, ip=session_schema.ip, useragent=session_schema.useragent,
+                                         is_active=True)
         if session_db:
-            session_db = self.repo.update(session_db, {'is_active': False})
-            logger.info(f'_deactivate_session_from_request: updated {session_db=:}')
+            session_db = await self.repo.update(session_db, {'is_active': False})
+            # logger.info(f'_deactivate_session_from_request: updated {session_db=:}')
 
             session_cached = await self.cache.get(session_db.id)
             if session_cached:
@@ -111,7 +111,7 @@ class AuthManager():
 
         if token_schema.oauth_type != OAuthTypesEnum.local:
             token = token_schema.oauth_token
-            token_info = get_user_info_oauth(token_schema.oauth_token, oauth_type=token_schema.oauth_type)
+            token_info = await get_user_info_oauth(token_schema.oauth_token, oauth_type=token_schema.oauth_type)
             if token_info is None:
                 return None
 
@@ -142,7 +142,7 @@ class AuthManager():
         deactivate user active session with session_ser data if such already exists
         create new user active session with session_ser data
         """
-        user = self.repo.get(UserModel, email=user_login_schema.email)
+        user = await self.repo.get(UserModel, email=user_login_schema.email)
         if user is None:
             raise InvalidCredentialsException
 
@@ -169,9 +169,9 @@ class AuthManager():
         delete session from cache
         """
         session_id = access_token_schema.session_id
-        session_db = self.repo.get(SessionModel, id=session_id, is_active=True)
+        session_db = await self.repo.get(SessionModel, id=session_id, is_active=True)
         if session_db:
-            self.repo.update(session_db, {'is_active': False})
+            await self.repo.update(session_db, {'is_active': False})
             logger.info(f'logout: updated {session_db=:}')
 
         await self.cache.delete(session_id)
@@ -184,9 +184,9 @@ class AuthManager():
             deactivate in db
             delete session from cache
         """
-        user: UserModel = self.repo.get(UserModel, id=access_token_schema.sub)
+        user: UserModel = await self.repo.get(UserModel, id=access_token_schema.sub)
         for session in user.active_sessions:
-            self.repo.update(session, {'is_active': False})
+            await self.repo.update(session, {'is_active': False})
             await self.cache.delete(session.id)
         logger.info(f'logout_all: for {user=:} deactivated all sessions db, deleted all sessions cached')
 
@@ -211,9 +211,9 @@ class AuthManager():
         return token_pair
 
     async def register(self, user_ser: UserCreateSerializer):
-        user = user_ser.create(self.repo)
+        user = await user_ser.create(self.repo)
         registered_role = self.repo.get(RoleModel, name=RolesNamesEnum.registered)
         user.roles.append(registered_role)
-        self.repo.session.commit()
-        self.repo.session.refresh(user)
+        await self.repo.session.commit()
+        await self.repo.session.refresh(user)
         return user
