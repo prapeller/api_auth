@@ -4,7 +4,7 @@ from core.dependencies import sql_alchemy_repo_dependency
 from core.enums import PermissionsNamesEnum, ResponseDetailEnum
 from core.security import permissions
 from db.models.role import RoleModel
-from db.repository import SqlAlchemyRepository
+from db.repository import SqlAlchemyRepositoryAsync
 from db.serializers.role import RoleReadSerializer, RoleUpdateSerializer
 
 router = fa.APIRouter()
@@ -14,9 +14,9 @@ router = fa.APIRouter()
             response_model=list[RoleReadSerializer])
 @permissions(required=[PermissionsNamesEnum.all_of_all])
 async def roles_list(
-        repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency),
+        repo: SqlAlchemyRepositoryAsync = fa.Depends(sql_alchemy_repo_dependency),
 ):
-    return repo.get_all(RoleModel)
+    return await repo.get_all(RoleModel)
 
 
 @router.put("/{id}",
@@ -25,10 +25,10 @@ async def roles_list(
 async def roles_update(
         id: str,
         role_ser: RoleUpdateSerializer,
-        repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency),
+        repo: SqlAlchemyRepositoryAsync = fa.Depends(sql_alchemy_repo_dependency),
 ):
-    role = repo.get(RoleModel, id=id)
-    role = repo.update(role, role_ser)
+    role = await repo.get(RoleModel, id=id)
+    role = await repo.update(role, role_ser)
     return role
 
 
@@ -36,7 +36,7 @@ async def roles_update(
 @permissions(required=[PermissionsNamesEnum.all_of_all])
 async def roles_delete(
         id: str,
-        repo: SqlAlchemyRepository = fa.Depends(sql_alchemy_repo_dependency),
+        repo: SqlAlchemyRepositoryAsync = fa.Depends(sql_alchemy_repo_dependency),
 ):
-    repo.remove(RoleModel, id)
+    await repo.remove(RoleModel, id)
     return {'detail': ResponseDetailEnum.ok}

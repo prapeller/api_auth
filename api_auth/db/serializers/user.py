@@ -3,21 +3,21 @@ import datetime as dt
 import pydantic as pd
 
 from core.enums import PermissionsNamesEnum, RolesNamesEnum
-from db import SessionLocal
+from db import SessionLocalAsync
 from db.models.user import UserModel
-from db.repository import SqlAlchemyRepository
+from db.repository import SqlAlchemyRepositoryAsync
 from services.hasher import get_password_hash
 
 
 class UserUpdatePasswordSerializer(pd.BaseModel):
     password: str
 
-    def update_password(self, repo, user_id):
-        user = repo.get(UserModel, id=user_id)
+    async def update_password(self, repo, user_id):
+        user = await repo.get(UserModel, id=user_id)
 
         hashed_password = get_password_hash(self.password)
         self.password = hashed_password
-        user = repo.update(user, self)
+        user = await repo.update(user, self)
         return user
 
 
@@ -27,10 +27,10 @@ class UserUpdateSerializer(pd.BaseModel):
     is_active: bool | None = None
 
     @pd.validator('email')
-    def validate_unique_email(cls, email):
+    async def validate_unique_email(cls, email):
         """checks if user with the same email as user_ser.email already exists"""
-        with SqlAlchemyRepository(SessionLocal()) as repo:
-            user_with_the_same_email = repo.get(UserModel, email=email)
+        with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
+            user_with_the_same_email = await repo.get(UserModel, email=email)
             if user_with_the_same_email is not None:
                 raise ValueError('User with the same email already exists')
         return email
@@ -40,10 +40,10 @@ class UserCreateSerializer(UserUpdateSerializer):
     email: pd.EmailStr
     password: str
 
-    def create(self, repo):
+    async def create(self, repo):
         hashed_password = get_password_hash(self.password)
         self.password = hashed_password
-        user = repo.create(UserModel, self)
+        user = await repo.create(UserModel, self)
         return user
 
 
