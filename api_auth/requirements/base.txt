@@ -12,6 +12,4 @@ passlib==1.7.4
 pydantic[email]
 PyJWT==2.7.0
 alembic==1.11.1
-authlib==1.2.0
 httpx==0.24.1
-requests==2.31.0
