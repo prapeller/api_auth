@@ -55,7 +55,7 @@ oauth2_scheme_local = OAuth2PasswordBearer(tokenUrl='/api/v1/auth/login')
 oauth2_scheme_providers = OAuth2(
     flows={
         'login_with_google': {
-            'authorizationUrl': '/api/v1/auth/login-with-google',
+            'authorizationUrl': '/api/v1/auth/login-oauth/google',
             'tokenUrl': 'https://oauth2.googleapis.com/token',
             'scopes': {
                 'openid': 'OpenID scope for authentication',
@@ -64,7 +64,7 @@ oauth2_scheme_providers = OAuth2(
             },
         },
         'login_with_yandex': {
-            'authorizationUrl': '/api/v1/auth/login-with-yandex',
+            'authorizationUrl': '/api/v1/auth/login-oauth/yandex',
             'tokenUrl': 'https://oauth.yandex.com/token',
         },
     },

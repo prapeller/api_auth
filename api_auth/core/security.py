@@ -4,10 +4,8 @@ import string
 from functools import wraps
 
 import jwt
-import requests
-
 from core.config import settings
-from core.enums import PermissionsNamesEnum, OAuthTypesEnum
+from core.enums import PermissionsNamesEnum
 from core.exceptions import UnauthorizedException
 
 logger = logging.getLogger(__name__)
@@ -17,20 +15,6 @@ def generate_password(length=12):
     characters = string.ascii_letters + string.digits + string.punctuation
     password = ''.join(secrets.choice(characters) for _ in range(length))
     return password
-
-
-def get_user_info_oauth(encoded_jwt: str, oauth_type: OAuthTypesEnum) -> dict | None:
-    if oauth_type == OAuthTypesEnum.google:
-        user_info_endpoint = 'https://www.googleapis.com/oauth2/v1/userinfo'
-    elif oauth_type == OAuthTypesEnum.yandex:
-        user_info_endpoint = 'https://login.yandex.ru/info'
-    headers = {'Authorization': f'Bearer {encoded_jwt}'}
-    user_info_response = requests.get(user_info_endpoint, headers=headers)
-    if user_info_response.status_code == 200:
-        user_info = user_info_response.json()
-        return user_info
-    else:
-        return None
 
 
 def get_token_data(encoded_jwt_local: str) -> dict | None:

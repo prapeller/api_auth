@@ -4,7 +4,6 @@ import logging
 from core.config import settings
 from core.enums import TokenTypesEnum, RolesNamesEnum, OAuthTypesEnum
 from core.exceptions import InvalidCredentialsException
-from core.security import get_user_info_oauth
 from db.models.role import RoleModel
 from db.models.session import SessionModel
 from db.models.user import UserModel
@@ -19,6 +18,7 @@ from db.serializers.user import UserLoginSchema, UserCreateSerializer
 from services.cache import RedisCache
 from services.hasher import password_is_verified
 from services.jwt_manager import create_token_pair
+from services.oauth import get_user_info_oauth
 
 logger = logging.getLogger(__name__)
 
