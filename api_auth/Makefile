@@ -5,6 +5,13 @@ up-loc:
 	docker-compose -f docker-compose-base.yml -f docker-compose-local.yml -p api_auth up -d
 
 
+build-jaeger:
+	docker-compose -f docker-compose-base.yml -f docker-compose-prod.yml -p jaeger_auth up --build -d  --remove-orphans --no-deps jaeger_auth
+
+build-jaeger-loc:
+	docker-compose -f docker-compose-base.yml -f docker-compose-local.yml -p jaeger_auth up --build -d  --remove-orphans --no-deps jaeger_auth
+
+
 build-postgres:
 	docker-compose -f docker-compose-base.yml -f docker-compose-prod.yml -p api_auth up --build -d  --remove-orphans --no-deps postgres_auth
 

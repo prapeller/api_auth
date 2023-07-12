@@ -3,6 +3,11 @@ from contextlib import asynccontextmanager
 import fastapi as fa
 import uvicorn
 from fastapi.responses import ORJSONResponse
+from opentelemetry import trace
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from redis.asyncio import Redis
 
 import core.dependencies
@@ -32,6 +37,34 @@ app = fa.FastAPI(lifespan=lifespan,
                  openapi_url='/api/openapi.json',
                  default_response_class=ORJSONResponse,
                  )
+
+
+def configure_tracer() -> None:
+    trace.set_tracer_provider(TracerProvider())
+    trace.get_tracer_provider().add_span_processor(
+        BatchSpanProcessor(
+            JaegerExporter(
+                agent_host_name='localhost',
+                agent_port=6831,
+            )
+        )
+    )
+    trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+
+
+configure_tracer()
+FastAPIInstrumentor.instrument_app(app)
+
+
+@app.middleware('http')
+async def before_request(request: fa.Request, call_next):
+    response = await call_next(request)
+    request_id = request.headers.get('X-Request-Id')
+    if request_id is None:
+        return ORJSONResponse(status_code=fa.status.HTTP_400_BAD_REQUEST,
+                              content={'detail': 'X-Request-Id is required'})
+    return response
+
 
 v1_router_public = fa.APIRouter()
 v1_router_public.include_router(v1_auth_public.router, prefix='/auth', tags=['auth'])

@@ -50,9 +50,16 @@ services:
     networks:
       - local_network_auth
     healthcheck:
-      test: [ "CMD", "curl", "--fail", "-f", "http://api_auth:8080/docs" ]
-      interval: 1s
-      retries: 5
+      test: [ "CMD", "curl", "--fail", "-f", "http://nginx:80/docs" ]
+      interval: 3s
+      timeout: 10s
+
+  jaeger_auth:
+    build:
+      context: .
+      dockerfile: ./docker/jaeger/Dockerfile
+    restart: always
+
 
 
 networks:
