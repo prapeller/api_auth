@@ -1,4 +1,5 @@
 import fastapi as fa
+import sqlalchemy as sa
 
 from core.dependencies import (
     get_current_user_dependency,
@@ -43,9 +44,12 @@ async def me_sessions(
         order: OrderEnum = OrderEnum.desc,
         pagination_params: dict = fa.Depends(pagination_params_dependency),
 ):
-    session_query = repo.session.query(SessionModel).filter(SessionModel.user == current_user)
-    total_sessions = await session_query.count()
-    paginated_sessions = await repo.paginated_query(SessionModel, session_query, order_by, order, pagination_params).all()
+    sessions_select = sa.select(SessionModel).where(SessionModel.user_id == current_user.id)
+    count_statement = sa.select(sa.func.count()).select_from(sessions_select.alias())
+    total_sessions = (await repo.session.execute(count_statement)).scalar_one()
+    paginated_sessions_select = await repo.get_paginated_select(SessionModel, sessions_select, order_by, order,
+                                                                pagination_params)
+    paginated_sessions = (await repo.session.execute(paginated_sessions_select)).scalars().all()
 
     return PaginatedSessionsSerializer(sessions=paginated_sessions, total_count=total_sessions)
 

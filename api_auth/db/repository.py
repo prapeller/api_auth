@@ -6,7 +6,6 @@ import sqlalchemy.ext.asyncio as sa_async
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
-from sqlalchemy.orm import Query
 
 from core.enums import OrderEnum
 from core.exceptions import BadRequestException, UserAlreadyExistsException
@@ -164,10 +163,10 @@ class SqlAlchemyRepositoryAsync(DBRepository):
             await self.session.rollback()
             raise ValueError(f'Error while removing {Model=:} {id=:}: {str(e)}')
 
-    def get_paginated_query(self, Model: type[sa_BaseModel], query: Query, order_by: str, order: OrderEnum,
-                            pagination_params):
+    async def get_paginated_select(self, Model: type[sa_BaseModel], select, order_by: str, order: OrderEnum,
+                                   pagination_params):
         order = sa.desc if order.value == 'desc' else sa.asc
-        query = query.order_by(order(getattr(Model, order_by))) \
+        select = select.order_by(order(getattr(Model, order_by))) \
             .offset(pagination_params['offset']) \
             .limit(pagination_params['limit'])
-        return query
+        return select
