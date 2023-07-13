@@ -29,9 +29,11 @@ user_data = {'email': 'test@mail.ru',
 
 
 async def create_test_registered_user(user_data) -> UserModel:
-    with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
+    async with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
         user_ser = UserCreateSerializer(**user_data)
-        user = await user_ser.create(repo)
+        user = await repo.get(UserModel, email=user_data['email'])
+        if user is None:
+            user = await repo.create_user(user_ser)
         registered_role = await repo.get(RoleModel, name=RolesNamesEnum.registered)
         user.roles.append(registered_role)
         await repo.session.commit()
@@ -40,9 +42,10 @@ async def create_test_registered_user(user_data) -> UserModel:
 
 
 async def delete_user_by_email(email) -> None:
-    with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
+    async with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
         user = await repo.get(UserModel, email=email)
-        await repo.remove(UserModel, id=user.id)
+        if user is not None:
+            await repo.remove(UserModel, id=user.id)
 
 
 def get_test_login_headers_data(user_data):
@@ -62,6 +65,7 @@ async def test_post_api_v1_auth_register(body_status):
      - status 200
      - 'registered' in body.roles_names
      """
+    await delete_user_by_email(email=user_data['email'])
 
     body, status = await body_status(REGISTER_URL, method=MethodsEnum.post, data=user_data)
 
@@ -69,7 +73,7 @@ async def test_post_api_v1_auth_register(body_status):
         assert status == HTTPStatus.OK
         assert RolesNamesEnum.registered in body['roles_names']
     finally:
-        delete_user_by_email(email=user_data['email'])
+        await delete_user_by_email(email=user_data['email'])
 
 
 async def test_post_api_v1_auth_login(body_status, redis_cache: RedisCache):
@@ -86,8 +90,8 @@ async def test_post_api_v1_auth_login(body_status, redis_cache: RedisCache):
         body, status = await body_status(LOGIN_URL, method=MethodsEnum.post, data=data, headers=headers)
         access_token_schema = TokenReadSchema.from_jwt(body['access_token'])
         session_id = access_token_schema.session_id
-        with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
-            session_db = repo.get(SessionModel, id=session_id)
+        async with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
+            session_db = await repo.get(SessionModel, id=session_id)
         refresh_token_cached = await redis_cache.get(session_id)
 
         assert status == HTTPStatus.OK
@@ -117,8 +121,8 @@ async def test_post_api_v1_auth_logout_authorized(body_status, redis_cache: Redi
         # logout
         auth_headers = {'Accept': 'application/json', 'Authorization': f'Bearer {access_token}'}
         body, status = await body_status(LOGOUT_URL, method=MethodsEnum.post, headers=auth_headers)
-        with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
-            session_db = repo.get(SessionModel, id=session_id)
+        async with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
+            session_db = await repo.get(SessionModel, id=session_id)
         refresh_token_cached = await redis_cache.get(session_id)
 
         assert status == HTTPStatus.OK
@@ -169,8 +173,8 @@ async def test_post_api_v1_auth_refresh_access_token_authorized(body_status, red
         new_access_token = refresh_body['access_token']
         new_access_token_schema = TokenReadSchema.from_jwt(new_access_token)
         new_session_id = new_access_token_schema.session_id
-        with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
-            session_db = repo.get(SessionModel, id=new_session_id)
+        async with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
+            session_db = await repo.get(SessionModel, id=new_session_id)
         new_refresh_token_cached = await redis_cache.get(new_session_id)
 
         assert refresh_status == HTTPStatus.OK
