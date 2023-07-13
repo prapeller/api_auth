@@ -11,7 +11,8 @@ from db.repository import SqlAlchemyRepositoryAsync
 from db.serializers.session import (
     SessionReadUserSerializer,
     SessionCreateSerializer,
-    SessionFromRequestSchema
+    SessionFromRequestSchema,
+    SessionUpdateSerializer
 )
 from db.serializers.token import TokenPairEncodedSerializer, TokenReadSchema
 from db.serializers.user import UserLoginSchema, UserCreateSerializer
@@ -171,7 +172,7 @@ class AuthManager():
         session_id = access_token_schema.session_id
         session_db = await self.repo.get(SessionModel, id=session_id, is_active=True)
         if session_db:
-            await self.repo.update(session_db, {'is_active': False})
+            await self.repo.update(session_db, SessionUpdateSerializer(is_active=False))
             logger.info(f'logout: updated {session_db=:}')
 
         await self.cache.delete(session_id)
@@ -211,8 +212,8 @@ class AuthManager():
         return token_pair
 
     async def register(self, user_ser: UserCreateSerializer):
-        user = await user_ser.create(self.repo)
-        registered_role = self.repo.get(RoleModel, name=RolesNamesEnum.registered)
+        user = await self.repo.create_user(user_ser)
+        registered_role = await self.repo.get(RoleModel, name=RolesNamesEnum.registered)
         user.roles.append(registered_role)
         await self.repo.session.commit()
         await self.repo.session.refresh(user)
