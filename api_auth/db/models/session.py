@@ -16,5 +16,4 @@ class SessionModel(IdentifiedCreatedUpdated, Base):
     is_active = sa.Column(sa.Boolean, default=True)
 
     def __repr__(self):
-        return f'<SessionModel> ({self.id=:}, {self.created_at=:}, {self.user=:}, ' \
-               f'{self.useragent=:}, {self.ip=:}, {self.is_active=:})'
+        return f'<SessionModel> ({self.id=:}, {self.created_at=:}, {self.useragent=:}, {self.ip=:}, {self.is_active=:})'

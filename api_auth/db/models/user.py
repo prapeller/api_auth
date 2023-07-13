@@ -115,4 +115,4 @@ class UserModel(IdentifiedCreatedUpdated, Base):
         )
 
     def __repr__(self):
-        return f"<UserModel> ({self.id=:}, {self.email=:}, {self.name=:}, {self.roles=:}, {self.sessions=:})"
+        return f'<UserModel> ({self.id=:}, {self.email=:}, {self.name=:})'

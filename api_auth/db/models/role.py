@@ -50,4 +50,4 @@ class RoleModel(IdentifiedCreatedUpdated, Base):
         )
 
     def __repr__(self):
-        return f"<RoleModel> ({self.id=:}, {self.name=:}, {self.permissions=:})"
+        return f'<RoleModel> ({self.id=:}, {self.name=:})'

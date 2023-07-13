@@ -1,7 +1,8 @@
 import sqlalchemy as sa
+from sqlalchemy.orm import relationship
+
 from db import Base
 from db.models._shared import IdentifiedCreatedUpdated
-from sqlalchemy.orm import relationship
 
 
 class SocialAccountModel(IdentifiedCreatedUpdated, Base):
