@@ -28,3 +28,12 @@ class InvalidCredentialsException(fa.HTTPException):
             detail=ResponseDetailEnum.invalid_credentials,
             headers={'WWW-Authenticate': 'Bearer'},
         )
+
+
+class UserAlreadyExistsException(fa.HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=fa.status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=ResponseDetailEnum.user_already_exists,
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
