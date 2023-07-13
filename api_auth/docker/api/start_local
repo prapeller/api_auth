@@ -1,4 +1,5 @@
 #!/bin/bash
 
 python3 -m scripts.migrate
+python3 -m scripts.create_permissions_roles
 python3 main.py
