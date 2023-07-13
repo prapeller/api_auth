@@ -22,6 +22,7 @@ class ResponseDetailEnum(str, Enum):
     ok = 'ok'
     unauthorized = 'Unauthorized for this action.'
     invalid_credentials = 'Invalid credentials were provided.'
+    user_already_exists = 'User with these credentials already exists.'
 
 
 class RolesNamesEnum(str, Enum):
