@@ -14,6 +14,6 @@ def init_models():
 
 DATABASE_URL = f'postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@' \
                f'{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}'
-engine = create_async_engine(DATABASE_URL, echo=True, future=True)
+engine = create_async_engine(DATABASE_URL, future=True)
 SessionLocalAsync = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
