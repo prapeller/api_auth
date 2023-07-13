@@ -11,7 +11,7 @@ class PermissionModel(IdentifiedCreatedUpdated, Base):
     name = sa.Column(sa.String(20), unique=True, nullable=False)
 
     # many-to-many
-    roles = relationship('RoleModel', secondary='role_permission', back_populates='permissions')
+    roles = relationship('RoleModel', secondary='role_permission', back_populates='permissions', lazy='selectin')
 
     def __repr__(self):
         return f"<PermissionModel> ({self.id=:}, {self.name=:})"

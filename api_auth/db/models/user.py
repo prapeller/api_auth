@@ -19,10 +19,10 @@ class UserModel(IdentifiedCreatedUpdated, Base):
     is_active = sa.Column(sa.Boolean, nullable=False, default=True)
 
     # many-to-many
-    roles = relationship('RoleModel', secondary='user_role', back_populates='users')
+    roles = relationship('RoleModel', secondary='user_role', back_populates='users', lazy='selectin')
     # many-to-one
-    sessions = relationship('SessionModel', back_populates='user')
-    social_accounts = relationship('SocialAccountModel', back_populates='user')
+    sessions = relationship('SessionModel', back_populates='user', lazy='selectin')
+    social_accounts = relationship('SocialAccountModel', back_populates='user', lazy='selectin')
 
     @hybrid_property
     def roles_ids(self):

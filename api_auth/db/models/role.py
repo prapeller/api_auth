@@ -13,8 +13,8 @@ class RoleModel(IdentifiedCreatedUpdated, Base):
     __tablename__ = 'role'
 
     name = sa.Column(sa.String(20), unique=True, nullable=False)
-    users = relationship('UserModel', secondary='user_role', back_populates='roles')
-    permissions = relationship('PermissionModel', secondary='role_permission', back_populates='roles')
+    users = relationship('UserModel', secondary='user_role', back_populates='roles', lazy='selectin')
+    permissions = relationship('PermissionModel', secondary='role_permission', back_populates='roles', lazy='selectin')
 
     @hybrid_property
     def users_ids(self):
