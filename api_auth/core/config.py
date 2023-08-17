@@ -12,8 +12,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 class Settings(pd.BaseSettings):
     PROJECT_NAME: str
 
-    API_HOST: str
-    API_PORT: int
+    API_AUTH_HOST: str
+    API_AUTH_PORT: int
 
     REDIS_HOST: str
     REDIS_PORT: int

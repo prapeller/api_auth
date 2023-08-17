@@ -7,3 +7,5 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY ./docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
 RUN sed -i '38 i sed -i "s/DOCS_URL/${DOCS_URL}/g" /etc/nginx/conf.d/default.conf' /docker-entrypoint.sh
+RUN sed -i '38 i sed -i "s/API_AUTH_HOST/${API_AUTH_HOST}/g" /etc/nginx/conf.d/default.conf' /docker-entrypoint.sh
+RUN sed -i '38 i sed -i "s/API_AUTH_PORT/${API_AUTH_PORT}/g" /etc/nginx/conf.d/default.conf' /docker-entrypoint.sh

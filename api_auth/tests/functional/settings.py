@@ -5,8 +5,8 @@ import pydantic as pd
 
 
 class TestSettings(pd.BaseSettings):
-    API_HOST: str = '127.0.0.1'
-    API_PORT: int = 8080
+    API_AUTH_HOST: str = '127.0.0.1'
+    API_AUTH_PORT: int = 8080
 
     REDIS_HOST: str = '127.0.0.1'
     REDIS_PORT: int = 6379

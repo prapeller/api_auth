@@ -4,8 +4,8 @@ from core.config import settings
 from core.enums import OAuthTypesEnum
 from core.exceptions import BadRequestException
 
-redirect_uri_google = f'http://{settings.API_HOST}:{settings.API_PORT}/api/v1/auth/oauth-redirect/google'
-redirect_uri_yandex = f'http://{settings.API_HOST}:{settings.API_PORT}/api/v1/auth/oauth-redirect/yandex'
+redirect_uri_google = f'http://{settings.API_AUTH_HOST}:{settings.API_AUTH_PORT}/api/v1/auth/oauth-redirect/google'
+redirect_uri_yandex = f'http://{settings.API_AUTH_HOST}:{settings.API_AUTH_PORT}/api/v1/auth/oauth-redirect/yandex'
 
 
 async def get_redirect_uri_with_state(oauth_type: OAuthTypesEnum, stored_state):

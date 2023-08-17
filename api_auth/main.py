@@ -7,7 +7,7 @@ from opentelemetry import trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from redis.asyncio import Redis
 
 import core.dependencies
@@ -42,14 +42,9 @@ app = fa.FastAPI(lifespan=lifespan,
 def configure_tracer() -> None:
     trace.set_tracer_provider(TracerProvider())
     trace.get_tracer_provider().add_span_processor(
-        BatchSpanProcessor(
-            JaegerExporter(
-                agent_host_name='localhost',
-                agent_port=6831,
-            )
-        )
-    )
-    trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+        BatchSpanProcessor(JaegerExporter(agent_host_name='127.0.0.1', agent_port=6831)))
+    # trace.get_tracer_provider().add_span_processor(
+    #     BatchSpanProcessor(ConsoleSpanExporter()))
 
 
 configure_tracer()
@@ -79,4 +74,4 @@ app.include_router(v1_router_public, prefix='/api/v1')
 app.include_router(v1_router_authorized, prefix='/api/v1')
 
 if __name__ == '__main__':
-    uvicorn.run('main:app', host=settings.API_HOST, port=settings.API_PORT, reload=True)
+    uvicorn.run('main:app', host=settings.API_AUTH_HOST, port=settings.API_AUTH_PORT, reload=True)

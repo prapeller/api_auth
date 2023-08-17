@@ -25,23 +25,12 @@ services:
       - ./.envs/.docker-compose-local/.api
       - ./.envs/.docker-compose-local/.redis
 
-  nginx:
-    restart: always
-    build:
-      context: .
-      dockerfile: docker/nginx/Dockerfile
-    container_name: nginx
-    volumes:
-      - static_volume:/app/staticfiles
-      - media_volume:/app/mediafiles
+
+  nginx_auth:
     ports:
-      - "80:80"
+      - "81:81"
     env_file:
-      - .envs/.local/.api
-    depends_on:
-      - api_auth
-    networks:
-      - local_network_auth
+      - .envs/.docker-compose-local/.api
 
   jaeger_auth:
     ports:

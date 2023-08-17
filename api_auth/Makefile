@@ -107,7 +107,8 @@ build:
 	docker-compose -f docker-compose-base.yml -f docker-compose-prod.yml -p api_auth up --build -d --remove-orphans
 
 build-loc:
-	docker-compose -f docker-compose-base.yml -f docker-compose-local.yml -p api_auth up --build -d --remove-orphans
+	@docker network create shared_network || true
+	@docker-compose -f docker-compose-base.yml -f docker-compose-local.yml -p api_auth up --build -d --remove-orphans
 
 
 build-nginx:
