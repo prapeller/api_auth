@@ -4,60 +4,22 @@ import pytest
 
 from core.enums import RolesNamesEnum, MethodsEnum
 from db import SessionLocalAsync
-from db.models.role import RoleModel
 from db.models.session import SessionModel
-from db.models.user import UserModel
 from db.repository import SqlAlchemyRepositoryAsync
 from db.serializers.token import TokenReadSchema
-from db.serializers.user import UserCreateSerializer
 from services.cache import RedisCache
 from tests.functional.settings import test_settings
+from tests.functional.src.helpers_users import user_data, create_test_registered_user, delete_user_by_email, \
+    get_json_headers, get_login_headers, get_login_form_data
 
 pytestmark = pytest.mark.asyncio
 
-AUTH_URL = f'http://{test_settings.API_HOST}:{test_settings.API_PORT}/api/v1/auth'
+AUTH_URL = f'http://{test_settings.API_AUTH_HOST}:{test_settings.API_AUTH_PORT}/api/v1/auth'
 
 REGISTER_URL = f'{AUTH_URL}/register'
 LOGIN_URL = f'{AUTH_URL}/login'
 LOGOUT_URL = f'{AUTH_URL}/logout'
 REFRESH_URL = f'{AUTH_URL}/refresh-access-token'
-
-user_data = {'email': 'test@mail.ru',
-             'name': 'Test Name',
-             'password': 'test_password123',
-             'is_active': True}
-
-
-async def create_test_registered_user(user_data) -> UserModel:
-    async with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
-        user_ser = UserCreateSerializer(**user_data)
-        user = await repo.get(UserModel, email=user_data['email'])
-        if user is None:
-            user = await repo.create_user(user_ser)
-        registered_role = await repo.get(RoleModel, name=RolesNamesEnum.registered)
-        user.roles.append(registered_role)
-        await repo.session.commit()
-        await repo.session.refresh(user)
-        return user
-
-
-async def delete_user_by_email(email) -> None:
-    async with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
-        user = await repo.get(UserModel, email=email)
-        if user is not None:
-            await repo.remove(UserModel, id=user.id)
-
-
-def get_test_login_headers_data(user_data):
-    headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
-    form_data = {
-        'username': user_data['email'],
-        'password': user_data['password'],
-    }
-    return headers, form_data
 
 
 async def test_post_api_v1_auth_register(body_status):
@@ -86,8 +48,9 @@ async def test_post_api_v1_auth_login(body_status, redis_cache: RedisCache):
      """
     await create_test_registered_user(user_data)
     try:
-        headers, data = get_test_login_headers_data(user_data)
-        body, status = await body_status(LOGIN_URL, method=MethodsEnum.post, data=data, headers=headers)
+        headers = await get_login_headers()
+        form_data = await get_login_form_data(user_data)
+        body, status = await body_status(LOGIN_URL, method=MethodsEnum.post, data=form_data, headers=headers)
         access_token_schema = TokenReadSchema.from_jwt(body['access_token'])
         session_id = access_token_schema.session_id
         async with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
@@ -113,13 +76,15 @@ async def test_post_api_v1_auth_logout_authorized(body_status, redis_cache: Redi
     # login
     await create_test_registered_user(user_data)
     try:
-        headers, data = get_test_login_headers_data(user_data)
-        body, status = await body_status(LOGIN_URL, method=MethodsEnum.post, data=data, headers=headers)
+        headers = await get_login_headers()
+        form_data = await get_login_form_data(user_data)
+        body, status = await body_status(LOGIN_URL, method=MethodsEnum.post, data=form_data, headers=headers)
         access_token = body['access_token']
         access_token_schema = TokenReadSchema.from_jwt(access_token)
         session_id = access_token_schema.session_id
         # logout
-        auth_headers = {'Accept': 'application/json', 'Authorization': f'Bearer {access_token}'}
+        auth_headers = await get_json_headers()
+        auth_headers.update({'Authorization': f'Bearer {access_token}'})
         body, status = await body_status(LOGOUT_URL, method=MethodsEnum.post, headers=auth_headers)
         async with SqlAlchemyRepositoryAsync(SessionLocalAsync()) as repo:
             session_db = await repo.get(SessionModel, id=session_id)
@@ -140,7 +105,8 @@ async def test_post_api_v1_auth_logout_unauthorized(body_status, redis_cache: Re
     await create_test_registered_user(user_data)
     try:
         access_token = 'invalid_access_token'
-        auth_headers = {'Accept': 'application/json', 'Authorization': f'Bearer {access_token}'}
+        auth_headers = await get_json_headers()
+        auth_headers.update({'Authorization': f'Bearer {access_token}'})
         body, status = await body_status(LOGOUT_URL, method=MethodsEnum.post, headers=auth_headers)
 
         assert status == HTTPStatus.UNAUTHORIZED
@@ -159,8 +125,10 @@ async def test_post_api_v1_auth_refresh_access_token_authorized(body_status, red
     await create_test_registered_user(user_data)
     try:
         # login
-        headers, data = get_test_login_headers_data(user_data)
-        login_body, login_status = await body_status(LOGIN_URL, method=MethodsEnum.post, data=data, headers=headers)
+        headers = await get_login_headers()
+        form_data = await get_login_form_data(user_data)
+        login_body, login_status = await body_status(LOGIN_URL, method=MethodsEnum.post, data=form_data,
+                                                     headers=headers)
         old_access_token = login_body['access_token']
         old_refresh_token = login_body['refresh_token']
         old_access_token_schema = TokenReadSchema.from_jwt(old_access_token)
