@@ -1,10 +1,17 @@
 import datetime as dt
 import json
+import logging
 import pathlib
 
 from sqlalchemy.ext.hybrid import hybrid_property
 
 SRC_PATH = pathlib.Path(__file__).resolve().parent.parent
+
+
+class RequestIdFilter(logging.Filter):
+    def filter(self, record):
+        record.request_id = getattr(record, 'request_id', 'None')
+        return True
 
 
 class CustomEncoder(json.JSONEncoder):

@@ -1,0 +1,120 @@
+version: "3.9"
+
+services:
+  redis_auth:
+    build:
+      context: ../..
+      dockerfile: ./docker/api/redis/Dockerfile
+    container_name: redis_auth
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli", "ping", "|", "grep", "PONG" ]
+      interval: 3s
+      timeout: 10s
+      retries: 3
+    networks:
+      - local_network_auth
+    env_file:
+      - ../../.envs/.docker-compose-local/.redis
+    ports:
+      - "6381:6379"
+
+  api_auth:
+    build:
+      context: ../..
+      dockerfile: ./docker/api/Dockerfile
+      args:
+        - BUILD_ENV=local
+    container_name: api_auth
+    command: /start_local
+    volumes:
+      - static_files_auth_volume:/app/staticfiles
+      - media_files_auth_volume:/app/mediafiles
+      - postgres_backups_auth_volume:/app/staticfiles/backups
+      - ../..:/app
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -H 'X-Request-Id: healthcheck' --fail -f http://$$API_AUTH_HOST:$$API_AUTH_PORT/docs" ]
+      interval: 3s
+      timeout: 10s
+      retries: 3
+    env_file:
+      - ../../.envs/.docker-compose-local/.postgres
+      - ../../.envs/.docker-compose-local/.api
+      - ../../.envs/.docker-compose-local/.redis
+    networks:
+      - local_network_auth
+      - shared_network
+    expose:
+      - "8081"
+    ports:
+      - "8081:8081"
+
+  nginx_auth:
+    restart: always
+    build:
+      context: ../..
+      dockerfile: ./docker/api/nginx/Dockerfile
+    container_name: nginx_auth
+    env_file:
+      - ../../.envs/.docker-compose-local/.api
+    volumes:
+      - static_files_auth_volume:/app/staticfiles
+      - media_files_auth_volume:/app/mediafiles
+    depends_on:
+      - api_auth
+    healthcheck:
+      test: ["CMD", "nc", "-z", "nginx_auth", "81"]
+      interval: 3s
+      timeout: 10s
+      retries: 3
+    networks:
+      - local_network_auth
+      - shared_network
+    ports:
+      - "81:81"
+
+  jaeger_auth:
+    build:
+      context: ../..
+      dockerfile: ./docker/api/jaeger/Dockerfile
+    container_name: jaeger_auth
+    restart: always
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "jaeger_auth", "16686" ]
+      interval: 3s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+
+  tests_auth:
+    build:
+      context: ../..
+      dockerfile: ./docker/api/Dockerfile
+      args:
+        - BUILD_ENV=local
+    command: /start_tests
+    container_name: tests_auth
+    volumes:
+      - ../..:/app
+    env_file:
+      - ../../.envs/.docker-compose-local/.tests
+      - ../../.envs/.docker-compose-local/.redis
+    depends_on:
+      redis_auth:
+        condition: service_healthy
+      api_auth:
+        condition: service_healthy
+    networks:
+      - local_network_auth
+
+networks:
+  local_network_auth:
+    driver: bridge
+  shared_network:
+    external: true
+
+volumes:
+  static_files_auth_volume:
+  media_files_auth_volume:
+  postgres_backups_auth_volume:

@@ -3,7 +3,7 @@ import logging
 
 from core.config import settings
 from core.enums import TokenTypesEnum, RolesNamesEnum, OAuthTypesEnum
-from core.exceptions import InvalidCredentialsException
+from core.exceptions import InvalidCredentialsException, UnauthorizedException
 from db.models.role import RoleModel
 from db.models.session import SessionModel
 from db.models.user import UserModel
@@ -145,7 +145,7 @@ class AuthManager():
         """
         user = await self.repo.get(UserModel, email=user_login_schema.email)
         if user is None:
-            raise InvalidCredentialsException
+            raise UnauthorizedException
 
         if oauth_type == OAuthTypesEnum.local:
             if not password_is_verified(user_login_schema.password, user.password):

@@ -6,17 +6,18 @@ ARG BUILD_ENV
 ENV BUILD_ENV $BUILD_ENV
 
 RUN apt-get update && apt-get install --no-install-recommends -y libpq-dev build-essential
-COPY ./requirements .
+COPY ./api_auth/requirements .
+COPY ./.envs .
 RUN pip wheel --wheel-dir /usr/src/app/wheels -r ${BUILD_ENV}.txt
 
 FROM my_python as python-run-stage
 
-ARG APP_HOME=/app
+ARG APP_HOME=/app/api_auth
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 WORKDIR ${APP_HOME}
-RUN apt-get update && apt-get install --no-install-recommends -y libpq-dev gettext curl netcat \
+RUN apt-get update && apt-get install --no-install-recommends -y libpq-dev gettext curl netcat postgresql \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/*
 
@@ -24,7 +25,14 @@ COPY --from=python-build-stage /usr/src/app/wheels /wheels/
 RUN pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
     && rm -rf /wheels/
 
-COPY ./docker/tests/start /start
-RUN chmod +x /start
+COPY ./docker/api/entrypoint /entrypoint
+COPY ./docker/api/start_prod /start_prod
+COPY ./docker/api/start_local /start_local
+COPY ./docker/api/start_tests /start_tests
+RUN chmod +x /entrypoint
+RUN chmod +x /start_prod
+RUN chmod +x /start_local
+RUN chmod +x /start_tests
 
 COPY . ${APP_HOME}
+ENTRYPOINT ["/entrypoint"]

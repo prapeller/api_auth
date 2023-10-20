@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import fastapi as fa
 import uvicorn
@@ -18,7 +19,13 @@ from api.v1.authorized import roles as v1_roles
 from api.v1.public import auth as v1_auth_public
 from core.config import settings
 from core.dependencies import verified_token_schema_dependency
+from core.logger_config import setup_logger
 from db import init_models
+
+SERVICE_DIR = Path(__file__).resolve().parent
+SERVICE_NAME = SERVICE_DIR.stem
+
+logger = setup_logger(SERVICE_NAME, SERVICE_DIR)
 
 
 @asynccontextmanager
@@ -52,26 +59,22 @@ FastAPIInstrumentor.instrument_app(app)
 
 
 @app.middleware('http')
-async def before_request(request: fa.Request, call_next):
-    response = await call_next(request)
-    request_id = request.headers.get('X-Request-Id')
-    if request_id is None:
-        return ORJSONResponse(status_code=fa.status.HTTP_400_BAD_REQUEST,
-                              content={'detail': 'X-Request-Id is required'})
-    return response
+async def log_request_id(request: fa.Request, call_next):
+    logger.info('Request processed', extra={'request_id': request.headers.get('X-Request-Id', 'None')})
+    return await call_next(request)
 
+
+v1_router_auth = fa.APIRouter(dependencies=[fa.Depends(verified_token_schema_dependency)])
+v1_router_auth.include_router(v1_postgres.router, prefix='/postgres', tags=['postgres'])
+v1_router_auth.include_router(v1_auth_authorized.router, prefix='/auth', tags=['auth'])
+v1_router_auth.include_router(v1_roles.router, prefix='/roles', tags=['roles'])
+v1_router_auth.include_router(v1_me.router, prefix='/me', tags=['me'])
 
 v1_router_public = fa.APIRouter()
 v1_router_public.include_router(v1_auth_public.router, prefix='/auth', tags=['auth'])
 
-v1_router_authorized = fa.APIRouter(dependencies=[fa.Depends(verified_token_schema_dependency)])
-v1_router_authorized.include_router(v1_postgres.router, prefix='/postgres', tags=['postgres'])
-v1_router_authorized.include_router(v1_auth_authorized.router, prefix='/auth', tags=['auth'])
-v1_router_authorized.include_router(v1_roles.router, prefix='/roles', tags=['roles'])
-v1_router_authorized.include_router(v1_me.router, prefix='/me', tags=['me'])
-
+app.include_router(v1_router_auth, prefix='/api/v1')
 app.include_router(v1_router_public, prefix='/api/v1')
-app.include_router(v1_router_authorized, prefix='/api/v1')
 
 if __name__ == '__main__':
     uvicorn.run('main:app', host=settings.API_AUTH_HOST, port=settings.API_AUTH_PORT, reload=True)
