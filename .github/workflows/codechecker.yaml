@@ -28,4 +28,4 @@ jobs:
         pip install flake8
 
     - name: Flake8
-      run: 'flake8 . --config=flake8.cfg'
+      run: 'flake8 . --config=setup.cfg'

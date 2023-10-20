@@ -1,9 +1,9 @@
 import logging
 from pathlib import Path
 
-import logstash
+# import logstash
 
-from core.shared import RequestIdFilter
+# from core.shared import RequestIdFilter
 
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 LOG_DEFAULT_HANDLERS = ['console', ]
