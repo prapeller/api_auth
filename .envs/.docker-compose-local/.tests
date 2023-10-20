@@ -1,0 +1,5 @@
+DEBUG=True
+DOCKER=True
+
+API_AUTH_HOST=api_auth
+API_AUTH_PORT=8081

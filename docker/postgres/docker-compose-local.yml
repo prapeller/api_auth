@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+
+  postgres_auth:
+    restart: always
+    build:
+      context: ../..
+      dockerfile: ./docker/postgres/Dockerfile
+    container_name: postgres_auth
+    volumes:
+      - local_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    networks:
+      - local_network_auth
+      - shared_network
+    env_file:
+      - ../../.envs/.docker-compose-local/.postgres
+    ports:
+      - "5431:5432"
+    expose:
+      - "5432"
+
+
+networks:
+  local_network_auth:
+    driver: bridge
+  shared_network:
+    external: true
+
+volumes:
+  local_postgres_data: { }
+
+
+
+
+
