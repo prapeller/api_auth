@@ -44,7 +44,7 @@ async def me_sessions(
         order: OrderEnum = OrderEnum.desc,
         pagination_params: dict = fa.Depends(pagination_params_dependency),
 ):
-    sessions_select = sa.select(SessionModel).where(SessionModel.user_id == current_user.id)
+    sessions_select = sa.select(SessionModel).where(SessionModel.user_uuid == current_user.uuid)
     count_statement = sa.select(sa.func.count()).select_from(sessions_select.alias())
     total_sessions = (await repo.session.execute(count_statement)).scalar_one()
     paginated_sessions_select = await repo.get_paginated_select(SessionModel, sessions_select, order_by, order,

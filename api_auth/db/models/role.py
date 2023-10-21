@@ -17,25 +17,25 @@ class RoleModel(IdentifiedCreatedUpdated, Base):
     permissions = relationship('PermissionModel', secondary='role_permission', back_populates='roles', lazy='selectin')
 
     @hybrid_property
-    def users_ids(self):
-        return [user.id for user in self.users]
+    def users_uuids(self):
+        return [user.uuid for user in self.users]
 
-    @users_ids.expression
-    def users_ids(cls):
-        return sa.select(UserRoleAssociation.user_id).filter_by(role_id=cls.id)
+    @users_uuids.expression
+    def users_uuids(cls):
+        return sa.select(UserRoleAssociation.user_uuid).filter_by(role_uuid=cls.uuid)
 
     @hybrid_property
-    def permissions_ids(self):
-        return [perm.id for perm in self.permissions]
+    def permissions_uuids(self):
+        return [perm.uuid for perm in self.permissions]
 
-    @permissions_ids.setter
-    def permissions_ids(self, permissions_ids):
+    @permissions_uuids.setter
+    def permissions_uuids(self, permissions_ids):
         session = object_session(self)
-        self.permissions = session.query(PermissionModel).filter(PermissionModel.id.in_(permissions_ids)).all()
+        self.permissions = session.query(PermissionModel).filter(PermissionModel.uuid.in_(permissions_ids)).all()
 
-    @permissions_ids.expression
-    def permissions_ids(cls):
-        return sa.select(RolePermissionAssociation.permission_id).filter_by(role_id=cls.id)
+    @permissions_uuids.expression
+    def permissions_uuids(cls):
+        return sa.select(RolePermissionAssociation.permission_uuid).filter_by(role_uuid=cls.uuid)
 
     @hybrid_property
     def permissions_names(self):
@@ -46,8 +46,8 @@ class RoleModel(IdentifiedCreatedUpdated, Base):
         return (
             sa.select(PermissionModel.name)
             .join(RolePermissionAssociation)
-            .where(RolePermissionAssociation.permission_id == cls.id)
+            .where(RolePermissionAssociation.permission_uuid == cls.uuid)
         )
 
     def __repr__(self):
-        return f'<RoleModel> ({self.id=:}, {self.name=:})'
+        return f'<RoleModel> ({self.uuid=:}, {self.name=:})'

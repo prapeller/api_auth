@@ -60,19 +60,19 @@ api-create-superuser-loc:
 	docker-compose $(API_AUTH_LOCAL) run --rm api_auth python3 -m scripts.create_superuser
 
 api-create-superuser:
-	docker-compose $(API_AUTH_PROD) run --rm api_auth python3 -m api_auth.scripts.create_superuser
+	docker-compose $(API_AUTH_PROD) run --rm api_auth python3 -m scripts.create_superuser
 
 api-make-migration-loc:
-	docker-compose $(API_AUTH_LOCAL) run --rm api_auth python3 -m api_auth.scripts.make_migration
+	docker-compose $(API_AUTH_LOCAL) run --rm api_auth python3 -m scripts.make_migration
 
 api-make-migration:
-	docker-compose $(API_AUTH_PROD) run --rm api_auth python3 -m api_auth.scripts.make_migration
+	docker-compose $(API_AUTH_PROD) run --rm api_auth python3 -m scripts.make_migration
 
 api-migrate-loc:
-	docker-compose $(API_AUTH_LOCAL) run --rm api_auth python3 -m api_auth.scripts.migrate
+	docker-compose $(API_AUTH_LOCAL) run --rm api_auth python3 -m scripts.migrate
 
 api-migrate:
-	docker-compose $(API_AUTH_PROD) run --rm api_auth python3 -m api_auth.scripts.migrate
+	docker-compose $(API_AUTH_PROD) run --rm api_auth python3 -m scripts.migrate
 
 api-jaeger-build:
 	docker-compose -f docker-compose-base.yml -f docker-compose-prod.yml -p jaeger_auth up --build -d  --remove-orphans --no-deps jaeger_auth

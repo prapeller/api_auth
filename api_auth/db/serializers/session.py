@@ -4,20 +4,21 @@ import pydantic as pd
 
 
 class SessionUpdateSerializer(pd.BaseModel):
-    id: str | None = None
+    uuid: str | None = None
     useragent: str | None = None
     ip: str | None = None
     is_active: bool | None = None
 
 
 class SessionCreateSerializer(SessionUpdateSerializer):
-    user_id: str
+    user_uuid: str
     useragent: str
     ip: str
 
 
 class SessionReadSerializer(SessionCreateSerializer):
-    id: str
+    id: int
+    uuid: str
     updated_at: dt.datetime | None = None
     created_at: dt.datetime
 
@@ -43,8 +44,8 @@ class SessionFromRequestSchema(pd.BaseModel):
 
 
 class SessionCachedSchema(pd.BaseModel):
-    id: str
-    user_id: str
+    uuid: str
+    user_uuid: str
     useragent: str
     ip: str
 

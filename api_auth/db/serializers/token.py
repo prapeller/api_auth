@@ -11,11 +11,11 @@ from core.security import get_token_data
 class TokenCreateSchema(pd.BaseModel):
     type: TokenTypesEnum
 
-    sub: str  # user.id
+    sub: str  # user.uuid
     email: pd.EmailStr  # user.email
     permissions: list[PermissionsNamesEnum] = []  # user.permissions_names
 
-    session_id: str  # session.id
+    session_uuid: str  # session.id
     ip: str  # sesion.ip
     useragent: str  # session.useragent
 

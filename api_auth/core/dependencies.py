@@ -74,7 +74,7 @@ async def get_current_user_dependency(access_token: str = fa.Depends(oauth2_sche
     access_token_schema = TokenReadSchema.from_jwt(access_token)
     if access_token_schema is None:
         raise UnauthorizedException
-    current_user = await repo.get(UserModel, id=access_token_schema.sub)
+    current_user = await repo.get(UserModel, uuid=access_token_schema.sub)
     if current_user is None:
         raise UnauthorizedException
     return current_user

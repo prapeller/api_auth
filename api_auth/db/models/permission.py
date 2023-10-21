@@ -14,4 +14,4 @@ class PermissionModel(IdentifiedCreatedUpdated, Base):
     roles = relationship('RoleModel', secondary='role_permission', back_populates='permissions', lazy='selectin')
 
     def __repr__(self):
-        return f"<PermissionModel> ({self.id=:}, {self.name=:})"
+        return f"<PermissionModel> ({self.id=:}, {self.uuid=:}, {self.name=:})"

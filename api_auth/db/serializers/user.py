@@ -31,15 +31,16 @@ class UserCreateSerializer(UserUpdateSerializer):
 
 
 class UserReadSerializer(pd.BaseModel):
-    id: str
+    id: int
+    uuid: str
     updated_at: dt.datetime | None = None
     created_at: dt.datetime
 
-    roles_ids: list[str] = []
+    roles_uuids: list[str] = []
     roles_names: list['RolesNamesEnum'] = []
-    permissions_ids: list[str] = []
+    permissions_uuids: list[str] = []
     permissions_names: list['PermissionsNamesEnum'] = []
-    active_sessions_ids: list[str] = []
+    active_sessions_uuids: list[str] = []
 
     email: pd.EmailStr
     name: str

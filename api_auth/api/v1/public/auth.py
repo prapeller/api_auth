@@ -120,7 +120,7 @@ async def oauth_redirect(
         if user is None:
             user_ser = UserCreateSerializer(email=user_email, name=user_name, password=generate_password())
             user = await auth_manager.register(user_ser)
-            social_account_ser = SocialAccountCreateSerializer(user_id=user.id,
+            social_account_ser = SocialAccountCreateSerializer(user_uuid=user.uuid,
                                                                social_name=oauth_type,
                                                                social_id=social_id)
             await repo.create(SocialAccountModel, social_account_ser)

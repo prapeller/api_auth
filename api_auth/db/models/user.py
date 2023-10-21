@@ -25,33 +25,33 @@ class UserModel(IdentifiedCreatedUpdated, Base):
     social_accounts = relationship('SocialAccountModel', back_populates='user', lazy='selectin')
 
     @hybrid_property
-    def roles_ids(self):
-        return [role.id for role in self.roles]
+    def roles_uuids(self):
+        return [role.uuid for role in self.roles]
 
-    @roles_ids.expression
-    def roles_ids(cls):
-        return sa.select(UserRoleAssociation.role_id).filter_by(user_id=cls.id)
+    @roles_uuids.expression
+    def roles_uuids(cls):
+        return sa.select(UserRoleAssociation.role_uuid).filter_by(user_uuid=cls.uuid)
 
     @hybrid_property
-    def permissions_ids(self):
-        return [perm.id for perm in self.permissions]
+    def permissions_uuids(self):
+        return [perm.uuid for perm in self.permissions]
 
-    @permissions_ids.expression
-    def permissions_ids(cls):
-        return (sa.select(PermissionModel.id)
+    @permissions_uuids.expression
+    def permissions_uuids(cls):
+        return (sa.select(PermissionModel.uuid)
                 .join(RolePermissionAssociation)
                 .join(RoleModel)
                 .join(cls.roles)
-                .where(UserRoleAssociation.user_id == cls.id)
+                .where(UserRoleAssociation.user_uuid == cls.uuid)
                 )
 
     @hybrid_property
-    def sessions_ids(self):
-        return [session.id for session in self.sessions]
+    def sessions_uuids(self):
+        return [session.uuid for session in self.sessions]
 
-    @sessions_ids.expression
-    def sessions_ids(cls):
-        return sa.select(SessionModel.id).filter_by(user_id=cls.id)
+    @sessions_uuids.expression
+    def sessions_uuids(cls):
+        return sa.select(SessionModel.uuid).filter_by(user_uuid=cls.uuid)
 
     @hybrid_property
     def active_sessions(self):
@@ -59,15 +59,15 @@ class UserModel(IdentifiedCreatedUpdated, Base):
 
     @active_sessions.expression
     def active_sessions(cls):
-        return sa.select(SessionModel).filter_by(user_id=cls.id, is_active=True)
+        return sa.select(SessionModel).filter_by(user_uuid=cls.uuid, is_active=True)
 
     @hybrid_property
-    def active_sessions_ids(self):
-        return [session.id for session in self.sessions if session.is_active]
+    def active_sessions_uuids(self):
+        return [session.uuid for session in self.sessions if session.is_active]
 
-    @active_sessions_ids.expression
-    def active_sessions_ids(cls):
-        return sa.select(SessionModel.id).filter_by(user_id=cls.id, is_active=True)
+    @active_sessions_uuids.expression
+    def active_sessions_uuids(cls):
+        return sa.select(SessionModel.uuid).filter_by(user_uuid=cls.uuid, is_active=True)
 
     @hybrid_property
     def permissions(self):
@@ -83,7 +83,7 @@ class UserModel(IdentifiedCreatedUpdated, Base):
             .join(RolePermissionAssociation)
             .join(RoleModel)
             .join(cls.roles)
-            .where(UserRoleAssociation.user_id == cls.id)
+            .where(UserRoleAssociation.user_uuid == cls.uuid)
         )
 
     @hybrid_property
@@ -97,7 +97,7 @@ class UserModel(IdentifiedCreatedUpdated, Base):
             .join(RolePermissionAssociation)
             .join(RoleModel)
             .join(cls.roles)
-            .where(UserRoleAssociation.user_id == cls.id)
+            .where(UserRoleAssociation.user_uuid == cls.uuid)
         )
 
     @hybrid_property
@@ -111,8 +111,8 @@ class UserModel(IdentifiedCreatedUpdated, Base):
             .join(UserRoleAssociation)
             .join(RoleModel)
             .join(cls.roles)
-            .where(UserRoleAssociation.user_id == cls.id)
+            .where(UserRoleAssociation.user_uuid == cls.uuid)
         )
 
     def __repr__(self):
-        return f'<UserModel> ({self.id=:}, {self.email=:}, {self.name=:})'
+        return f'<UserModel> ({self.id=:}, {self.uuid=:},{self.email=:}, {self.name=:})'

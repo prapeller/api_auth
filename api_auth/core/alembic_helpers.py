@@ -8,8 +8,9 @@ from alembic.config import Config
 
 from core.config import BASE_DIR, settings
 
-VERSIONS_PATH = BASE_DIR / 'alembic/versions'
-
+ALEMBIC_PATH = BASE_DIR / 'api_auth/alembic'
+ALEMBIC_INI_PATH = BASE_DIR / 'api_auth/alembic.ini'
+VERSIONS_PATH = ALEMBIC_PATH / 'versions'
 
 def get_current_version():
     updated_config = get_updated_alembic_config()
@@ -29,17 +30,15 @@ def get_current_version():
 
 
 def get_updated_alembic_config():
-    alembic_ini_path = BASE_DIR / 'alembic.ini'
-
     # Read the alembic.ini file
     config = configparser.ConfigParser()
-    config.read(alembic_ini_path)
+    config.read(ALEMBIC_INI_PATH)
 
     # Set the sqlalchemy.url adn script_location values
     config.set('alembic', 'sqlalchemy.url',
                f'postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@'
                f'{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}')
-    config.set('alembic', 'script_location', str(BASE_DIR / 'alembic'))
+    config.set('alembic', 'script_location', str(ALEMBIC_PATH))
 
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_config_file:
         config.write(temp_config_file)

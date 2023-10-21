@@ -80,7 +80,7 @@ async def get_user_info_oauth(encoded_jwt: str, oauth_type: OAuthTypesEnum) -> d
 
 
 async def get_user_data(user_info: dict, oauth_type: OAuthTypesEnum) -> tuple[str, str, str]:
-    user_social_id = user_info['id']
+    user_social_uuid = user_info['uuid']
 
     if oauth_type == OAuthTypesEnum.google:
         user_name = user_info['name']
@@ -90,4 +90,4 @@ async def get_user_data(user_info: dict, oauth_type: OAuthTypesEnum) -> tuple[st
         user_email = user_info['default_email']
     else:
         raise BadRequestException('invalid oauth type')
-    return user_email, user_name, user_social_id
+    return user_email, user_name, user_social_uuid

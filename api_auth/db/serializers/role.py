@@ -6,7 +6,7 @@ from core.enums import PermissionsNamesEnum
 
 
 class RoleUpdateSerializer(pd.BaseModel):
-    permissions_ids: list[str] = []
+    permissions_uuids: list[str] = []
 
     class Config:
         orm_mode = True
@@ -17,11 +17,11 @@ class RoleCreateSerializer(RoleUpdateSerializer):
 
 
 class RoleReadSerializer(RoleCreateSerializer):
-    id: str
+    uuid: str
     created_at: dt.datetime
     updated_at: dt.datetime | None = None
 
-    permissions_ids: list[str] = []
+    permissions_uuids: list[str] = []
     permissions_names: list[PermissionsNamesEnum] = []
 
     class Config:

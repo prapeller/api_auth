@@ -33,8 +33,8 @@ services:
       - ../..:/app
     healthcheck:
       test: [ "CMD-SHELL", "curl -H 'X-Request-Id: healthcheck' --fail -f http://$$API_AUTH_HOST:$$API_AUTH_PORT/docs" ]
-      interval: 3s
-      timeout: 10s
+      interval: 10s
+      timeout: 30s
       retries: 3
     env_file:
       - ../../.envs/.docker-compose-local/.postgres

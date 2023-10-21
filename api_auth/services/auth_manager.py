@@ -47,7 +47,7 @@ class AuthManager():
         set refresh token to cache
         return token pair
         """
-        session_create_ser = SessionCreateSerializer(user_id=user.id,
+        session_create_ser = SessionCreateSerializer(user_uuid=user.uuid,
                                                      useragent=session_schema.useragent,
                                                      ip=session_schema.ip,
                                                      )
@@ -55,10 +55,10 @@ class AuthManager():
         session_ser = SessionReadUserSerializer.from_orm(session_db)
 
         token_pair = create_token_pair(
-            user_id=session_ser.user.id,
+            user_uuid=session_ser.user.uuid,
             email=session_ser.user.email,
             permissions=session_ser.user.permissions_names,
-            session_id=session_ser.id,
+            session_uuid=session_ser.uuid,
             ip=session_ser.ip,
             useragent=session_ser.useragent,
             oauth_type=oauth_type,
@@ -66,7 +66,7 @@ class AuthManager():
         )
 
         # cache session refresh token
-        await self.cache.set(session_ser.id,
+        await self.cache.set(session_ser.uuid,
                              token_pair.refresh_token,
                              ex=dt.timedelta(minutes=settings.REFRESH_TOKEN_EXP_MIN))
 
@@ -78,7 +78,7 @@ class AuthManager():
         if session_db:
             -deactivate session_db
 
-            get session_cached from cache with session_db.id
+            get session_cached from cache with session_db.uuid
             if session_cached:
                 -deactivate session_cached
         """
@@ -88,9 +88,9 @@ class AuthManager():
             session_db = await self.repo.update(session_db, {'is_active': False})
             # logger.info(f'_deactivate_session_from_request: updated {session_db=:}')
 
-            session_cached = await self.cache.get(session_db.id)
+            session_cached = await self.cache.get(session_db.uuid)
             if session_cached:
-                await self.cache.delete(session_db.id)
+                await self.cache.delete(session_db.uuid)
                 logger.info('_deactivate_session_from_request: deleted from cache')
 
     async def get_verified_token_schema(
@@ -121,9 +121,9 @@ class AuthManager():
             logger.error(f'verify_token: {session_from_request=:} doesnt match {token_schema=:}')
             return None
 
-        refresh_token_cached = await self.cache.get(token_schema.session_id)
+        refresh_token_cached = await self.cache.get(token_schema.session_uuid)
         if refresh_token_cached is None:
-            logger.error(f'verify_token: theres no refresh_token by {token_schema.session_id=:}')
+            logger.error(f'verify_token: theres no refresh_token by {token_schema.session_uuid=:}')
             return None
 
         if token_schema.type == TokenTypesEnum.refresh:
@@ -165,18 +165,18 @@ class AuthManager():
 
     async def logout(self, access_token_schema: TokenReadSchema):
         """
-        from token get session_id
+        from token get session_uuid
         if session exists in db - deactivate it
         delete session from cache
         """
-        session_id = access_token_schema.session_id
-        session_db = await self.repo.get(SessionModel, id=session_id, is_active=True)
+        session_uuid = access_token_schema.session_uuid
+        session_db = await self.repo.get(SessionModel, uuid=session_uuid, is_active=True)
         if session_db:
             await self.repo.update(session_db, SessionUpdateSerializer(is_active=False))
             logger.info(f'logout: updated {session_db=:}')
 
-        await self.cache.delete(session_id)
-        logger.info(f'logout: deleted from cache by {session_id=:}')
+        await self.cache.delete(session_uuid)
+        logger.info(f'logout: deleted from cache by {session_uuid=:}')
 
     async def logout_all(self, access_token_schema: TokenReadSchema):
         """
@@ -185,10 +185,10 @@ class AuthManager():
             deactivate in db
             delete session from cache
         """
-        user: UserModel = await self.repo.get(UserModel, id=access_token_schema.sub)
+        user: UserModel = await self.repo.get(UserModel, uuid=access_token_schema.sub)
         for session in user.active_sessions:
             await self.repo.update(session, {'is_active': False})
-            await self.cache.delete(session.id)
+            await self.cache.delete(session.uuid)
         logger.info(f'logout_all: for {user=:} deactivated all sessions db, deleted all sessions cached')
 
     async def refresh(self, refresh_token: str) -> TokenPairEncodedSerializer:
@@ -197,16 +197,16 @@ class AuthManager():
         - update refresh token in cache
         """
         refresh_token_schema = TokenReadSchema.from_jwt(refresh_token)
-        token_pair = create_token_pair(user_id=refresh_token_schema.sub,
+        token_pair = create_token_pair(user_uuid=refresh_token_schema.sub,
                                        email=refresh_token_schema.email,
                                        permissions=refresh_token_schema.permissions,
-                                       session_id=refresh_token_schema.session_id,
+                                       session_uuid=refresh_token_schema.session_uuid,
                                        ip=refresh_token_schema.ip,
                                        useragent=refresh_token_schema.useragent,
                                        oauth_type=refresh_token_schema.oauth_type,
                                        oauth_token=refresh_token_schema.oauth_token,
                                        )
-        await self.cache.set(refresh_token_schema.session_id,
+        await self.cache.set(refresh_token_schema.session_uuid,
                              token_pair.refresh_token,
                              ex=dt.timedelta(minutes=settings.REFRESH_TOKEN_EXP_MIN))
         return token_pair

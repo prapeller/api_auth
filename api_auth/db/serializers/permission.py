@@ -14,7 +14,7 @@ class PermissionCreateSerializer(PermissionUpdateSerializer):
 
 
 class PermissionReadSerializer(PermissionCreateSerializer):
-    id: str
+    uuid: str
     created_at: dt.datetime
     updated_at: dt.datetime | None = None
 

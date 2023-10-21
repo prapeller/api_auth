@@ -4,6 +4,6 @@ from core.enums import OAuthTypesEnum
 
 
 class SocialAccountCreateSerializer(pd.BaseModel):
-    user_id: str
+    user_uuid: str
     social_name: OAuthTypesEnum
-    social_id: str
+    social_uuid: str

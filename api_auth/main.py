@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from logging import Logger
 from pathlib import Path
 
 import fastapi as fa
@@ -22,16 +23,17 @@ from core.dependencies import verified_token_schema_dependency
 from core.logger_config import setup_logger
 from db import init_models
 
-SERVICE_DIR = Path(__file__).resolve().parent
-SERVICE_NAME = SERVICE_DIR.stem
-
-logger = setup_logger(SERVICE_NAME, SERVICE_DIR)
+logger: Logger | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: fa.FastAPI):
     # startup
     init_models()
+    global logger
+    SERVICE_DIR = Path(__file__).resolve().parent
+    SERVICE_NAME = SERVICE_DIR.stem
+    logger = setup_logger(SERVICE_NAME, SERVICE_DIR)
     core.dependencies.redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
     yield
     # shutdown
@@ -60,7 +62,8 @@ FastAPIInstrumentor.instrument_app(app)
 
 @app.middleware('http')
 async def log_request_id(request: fa.Request, call_next):
-    logger.info('Request processed', extra={'request_id': request.headers.get('X-Request-Id', 'None')})
+    request_id = request.headers.get('X-Request-Id', 'None')
+    logger.info(f'Request processed: {request_id=:}', extra={'request_id': request_id})
     return await call_next(request)
 
 

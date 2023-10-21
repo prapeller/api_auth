@@ -6,12 +6,12 @@ from db import Base
 class UserRoleAssociation(Base):
     __tablename__ = 'user_role'
     id = sa.Column(sa.Integer, primary_key=True)
-    user_id = sa.Column(sa.UUID(as_uuid=False), sa.ForeignKey('user.id', ondelete='CASCADE'))
-    role_id = sa.Column(sa.UUID(as_uuid=False), sa.ForeignKey('role.id', ondelete='CASCADE'))
+    user_uuid = sa.Column(sa.UUID(as_uuid=False), sa.ForeignKey('user.uuid', ondelete='CASCADE'))
+    role_uuid = sa.Column(sa.UUID(as_uuid=False), sa.ForeignKey('role.uuid', ondelete='CASCADE'))
 
     __table_args__ = (
         sa.UniqueConstraint(
-            'user_id', 'role_id', name='unique_user_id_role_id'),
+            'user_uuid', 'role_uuid', name='unique_user_uuid_role_uuid'),
         {'extend_existing': True},
     )
 
@@ -19,11 +19,11 @@ class UserRoleAssociation(Base):
 class RolePermissionAssociation(Base):
     __tablename__ = 'role_permission'
     id = sa.Column(sa.Integer, primary_key=True)
-    role_id = sa.Column(sa.UUID(as_uuid=False), sa.ForeignKey('role.id', ondelete='CASCADE'))
-    permission_id = sa.Column(sa.UUID(as_uuid=False), sa.ForeignKey('permission.id', ondelete='CASCADE'))
+    role_uuid = sa.Column(sa.UUID(as_uuid=False), sa.ForeignKey('role.uuid', ondelete='CASCADE'))
+    permission_uuid = sa.Column(sa.UUID(as_uuid=False), sa.ForeignKey('permission.uuid', ondelete='CASCADE'))
 
     __table_args__ = (
         sa.UniqueConstraint(
-            'role_id', 'permission_id', name='unique_role_id_permission_id'),
+            'role_uuid', 'permission_uuid', name='unique_role_uuid_permission_uuid'),
         {'extend_existing': True},
     )
