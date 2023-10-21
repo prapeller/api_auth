@@ -80,6 +80,9 @@ api-jaeger-build:
 api-jaeger-build-loc:
 	docker-compose -f docker-compose-base.yml -f docker-compose-local.yml -p jaeger_auth up --build -d  --remove-orphans --no-deps jaeger_auth
 
+api-jaeger-check-ip:
+	docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' jaeger_auth
+
 
 
 postgres-build:

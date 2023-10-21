@@ -9,7 +9,7 @@ from opentelemetry import trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from redis.asyncio import Redis
 
 import core.dependencies
@@ -51,9 +51,9 @@ app = fa.FastAPI(lifespan=lifespan,
 def configure_tracer() -> None:
     trace.set_tracer_provider(TracerProvider())
     trace.get_tracer_provider().add_span_processor(
-        BatchSpanProcessor(JaegerExporter(agent_host_name='127.0.0.1', agent_port=6831)))
-    # trace.get_tracer_provider().add_span_processor(
-    #     BatchSpanProcessor(ConsoleSpanExporter()))
+        BatchSpanProcessor(JaegerExporter(agent_host_name=settings.JAEGER_HOST, agent_port=settings.JAEGER_PORT)))
+    trace.get_tracer_provider().add_span_processor(
+        BatchSpanProcessor(ConsoleSpanExporter()))
 
 
 configure_tracer()
@@ -63,6 +63,10 @@ FastAPIInstrumentor.instrument_app(app)
 @app.middleware('http')
 async def log_request_id(request: fa.Request, call_next):
     request_id = request.headers.get('X-Request-Id', 'None')
+
+    with trace.get_tracer(__name__).start_as_current_span("main-span") as span:
+        span.set_attribute("request_id", request_id)
+
     logger.info(f'Request processed: {request_id=:}', extra={'request_id': request_id})
     return await call_next(request)
 

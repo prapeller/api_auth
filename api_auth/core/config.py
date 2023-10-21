@@ -10,6 +10,9 @@ class Settings(pd.BaseSettings):
     API_AUTH_HOST: str
     API_AUTH_PORT: int
 
+    JAEGER_HOST: str
+    JAEGER_PORT: int
+
     REDIS_HOST: str
     REDIS_PORT: int
 

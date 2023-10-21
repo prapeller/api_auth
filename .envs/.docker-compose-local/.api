@@ -4,6 +4,9 @@ DOCKER=True
 API_AUTH_HOST=api_auth
 API_AUTH_PORT=8081
 
+JAEGER_HOST=jaeger_auth
+JAEGER_PORT=6831
+
 PROJECT_NAME=api_auth
 DOCS_URL=docs
 
