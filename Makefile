@@ -83,6 +83,8 @@ api-jaeger-build-loc:
 api-jaeger-check-ip:
 	docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' jaeger_auth
 
+api-nginx-check-ip:
+	docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nginx_auth
 
 
 postgres-build:

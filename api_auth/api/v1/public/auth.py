@@ -46,8 +46,11 @@ async def auth_login(
         auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
 ):
     user_login_schema = UserLoginSchema(email=form_data.username, password=form_data.password)
-    session_schema = SessionFromRequestSchema(useragent=request.headers.get('user-agent'), ip=request.client.host)
-    token_pair_encoded_ser = await auth_manager.login(user_login_schema, session_schema)
+    session_from_request = SessionFromRequestSchema(
+        useragent=request.headers.get("user-agent"),
+        ip=request.headers.get('X-Forwarded-For'),
+    )
+    token_pair_encoded_ser = await auth_manager.login(user_login_schema, session_from_request)
     return token_pair_encoded_ser
 
 

@@ -66,11 +66,7 @@ services:
       interval: 3s
       timeout: 10s
       retries: 3
-    networks:
-      - local_network_auth
-      - shared_network
-    ports:
-      - "81:81"
+    network_mode: host
 
 #  jaeger_auth:
 #    build:
