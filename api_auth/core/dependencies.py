@@ -89,7 +89,6 @@ async def verified_token_schema_dependency(request: fa.Request,
         useragent=request.headers.get("user-agent"),
         ip=request.headers.get('X-Forwarded-For'),
     )
-    print(request.headers.get('X-Forwarded-For'))
     token_schema = await auth_manager.get_verified_token_schema(access_token, session_from_request)
     if token_schema is None:
         raise UnauthorizedException

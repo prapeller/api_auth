@@ -64,7 +64,10 @@ async def auth_refresh_access_token(
         refresh_token: str = fa.Body(...),
         auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
 ):
-    session_from_request = SessionFromRequestSchema(useragent=request.headers.get('user-agent'), ip=request.client.host)
+    session_from_request = SessionFromRequestSchema(
+        useragent=request.headers.get("user-agent"),
+        ip=request.headers.get('X-Forwarded-For'),
+    )
     token_schema = await auth_manager.get_verified_token_schema(refresh_token, session_from_request)
     if token_schema is None:
         raise UnauthorizedException
@@ -84,7 +87,10 @@ async def auth_verify_access_token(
         access_token: str = fa.Body(...),
         auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
 ):
-    session_from_request = SessionFromRequestSchema(useragent=useragent, ip=ip)
+    session_from_request = SessionFromRequestSchema(
+        useragent=useragent,
+        ip=ip
+    )
     token_schema = await auth_manager.get_verified_token_schema(access_token, session_from_request)
     if token_schema is None:
         raise UnauthorizedException
@@ -127,9 +133,12 @@ async def oauth_redirect(
                                                                social_name=oauth_type,
                                                                social_id=social_id)
             await repo.create(SocialAccountModel, social_account_ser)
-    session_schema = SessionFromRequestSchema(useragent=request.headers.get('user-agent'), ip=request.client.host)
+    session_from_request = SessionFromRequestSchema(
+        useragent=request.headers.get("user-agent"),
+        ip=request.headers.get('X-Forwarded-For'),
+    )
     token_pair = await auth_manager.login(UserLoginOAuthSchema(email=user_email),
-                                          session_schema,
+                                          session_from_request,
                                           oauth_type=oauth_type,
                                           oauth_token=oauth_token)
     return token_pair
