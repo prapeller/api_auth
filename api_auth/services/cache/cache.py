@@ -1,12 +1,17 @@
 import datetime as dt
-import logging
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any
 
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
-logger = logging.getLogger(__name__)
+from core.logger_config import setup_logger
+
+SERVICE_DIR = Path(__file__).resolve().parent
+SERVICE_NAME = SERVICE_DIR.stem
+
+logger = setup_logger(SERVICE_NAME, SERVICE_DIR)
 
 
 class Cache(ABC):

@@ -8,8 +8,8 @@ from db.models.user import UserModel
 from db.repository import SqlAlchemyRepositoryAsync
 from db.serializers.session import SessionFromRequestSchema
 from db.serializers.token import TokenReadSchema
-from services.auth_manager import AuthManager
-from services.cache import RedisCache
+from services.auth_manager.auth_manager import AuthManager
+from services.cache.cache import RedisCache
 
 redis: Redis | None = None
 

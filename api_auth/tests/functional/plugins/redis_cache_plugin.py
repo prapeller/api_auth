@@ -1,7 +1,7 @@
 import pytest_asyncio
 from redis.asyncio import Redis
 
-from services.cache import RedisCache
+from services.cache.cache import RedisCache
 from tests.functional.settings import test_settings
 
 

@@ -3,7 +3,7 @@ import fastapi as fa
 from core.dependencies import auth_manager_dependency, verified_token_schema_dependency
 from core.enums import ResponseDetailEnum
 from db.serializers.token import TokenReadSchema
-from services.auth_manager import AuthManager
+from services.auth_manager.auth_manager import AuthManager
 
 router = fa.APIRouter()
 

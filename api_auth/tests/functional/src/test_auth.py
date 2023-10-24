@@ -7,7 +7,7 @@ from db import SessionLocalAsync
 from db.models.session import SessionModel
 from db.repository import SqlAlchemyRepositoryAsync
 from db.serializers.token import TokenReadSchema
-from services.cache import RedisCache
+from services.cache.cache import RedisCache
 from tests.functional.settings import test_settings
 from tests.functional.src.helpers_users import user_data, create_test_registered_user, delete_user_by_email, \
     get_json_headers, get_login_headers, get_login_form_data

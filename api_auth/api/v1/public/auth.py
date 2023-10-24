@@ -14,8 +14,7 @@ from db.serializers.session import SessionFromRequestSchema
 from db.serializers.social_account import SocialAccountCreateSerializer
 from db.serializers.token import TokenPairEncodedSerializer, TokenReadSchema
 from db.serializers.user import UserLoginSchema, UserCreateSerializer, UserReadSerializer, UserLoginOAuthSchema
-from fastapi.security import OAuth2PasswordRequestForm
-from services.auth_manager import AuthManager
+from services.auth_manager.auth_manager import AuthManager
 from services.oauth import get_oauth_token, get_user_info_oauth, get_redirect_uri_with_state, get_user_data
 
 router = fa.APIRouter()

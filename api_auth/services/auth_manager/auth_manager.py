@@ -1,9 +1,14 @@
 import datetime as dt
-import logging
+from pathlib import Path
 
+import fastapi as fa
+import httpx
+
+from core import config
 from core.config import settings
 from core.enums import TokenTypesEnum, RolesNamesEnum, OAuthTypesEnum
-from core.exceptions import InvalidCredentialsException, UnauthorizedException
+from core.exceptions import InvalidCredentialsException, UnauthorizedException, UserWasNotRegisteredException
+from core.logger_config import setup_logger
 from db.models.role import RoleModel
 from db.models.session import SessionModel
 from db.models.user import UserModel
@@ -16,12 +21,15 @@ from db.serializers.session import (
 )
 from db.serializers.token import TokenPairEncodedSerializer, TokenReadSchema
 from db.serializers.user import UserLoginSchema, UserCreateSerializer
-from services.cache import RedisCache
+from services.cache.cache import RedisCache
 from services.hasher import password_is_verified
-from services.jwt_manager import create_token_pair
+from services.jwt_manager.jwt_manager import create_token_pair, create_temporary_register_token
 from services.oauth import get_user_info_oauth
 
-logger = logging.getLogger(__name__)
+SERVICE_DIR = Path(__file__).resolve().parent
+SERVICE_NAME = SERVICE_DIR.stem
+
+logger = setup_logger(SERVICE_NAME, SERVICE_DIR)
 
 
 class AuthManager():
@@ -54,7 +62,7 @@ class AuthManager():
         session_db: SessionModel = await self.repo.create(SessionModel, session_create_ser)
         session_ser = SessionReadUserSerializer.from_orm(session_db)
 
-        token_pair = create_token_pair(
+        token_pair = await create_token_pair(
             user_uuid=session_ser.user.uuid,
             email=session_ser.user.email,
             permissions=session_ser.user.permissions_names,
@@ -68,7 +76,7 @@ class AuthManager():
         # cache session refresh token
         await self.cache.set(session_ser.uuid,
                              token_pair.refresh_token,
-                             ex=dt.timedelta(minutes=settings.REFRESH_TOKEN_EXP_MIN))
+                             ex=dt.timedelta(minutes=config.REFRESH_TOKEN_EXP_MIN))
 
         return token_pair
 
@@ -197,24 +205,86 @@ class AuthManager():
         - update refresh token in cache
         """
         refresh_token_schema = TokenReadSchema.from_jwt(refresh_token)
-        token_pair = create_token_pair(user_uuid=refresh_token_schema.sub,
-                                       email=refresh_token_schema.email,
-                                       permissions=refresh_token_schema.permissions,
-                                       session_uuid=refresh_token_schema.session_uuid,
-                                       ip=refresh_token_schema.ip,
-                                       useragent=refresh_token_schema.useragent,
-                                       oauth_type=refresh_token_schema.oauth_type,
-                                       oauth_token=refresh_token_schema.oauth_token,
-                                       )
+        token_pair = await create_token_pair(user_uuid=refresh_token_schema.sub,
+                                             email=refresh_token_schema.email,
+                                             permissions=refresh_token_schema.permissions,
+                                             session_uuid=refresh_token_schema.session_uuid,
+                                             ip=refresh_token_schema.ip,
+                                             useragent=refresh_token_schema.useragent,
+                                             oauth_type=refresh_token_schema.oauth_type,
+                                             oauth_token=refresh_token_schema.oauth_token,
+                                             )
         await self.cache.set(refresh_token_schema.session_uuid,
                              token_pair.refresh_token,
-                             ex=dt.timedelta(minutes=settings.REFRESH_TOKEN_EXP_MIN))
+                             ex=dt.timedelta(minutes=config.REFRESH_TOKEN_EXP_MIN))
         return token_pair
 
+    @staticmethod
+    async def send_service_request_post(url, url_postfix, headers, body, user):
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(url, headers=headers, json=body)
+                if response.status_code == fa.status.HTTP_200_OK:
+                    logger.debug(f'request sent {url_postfix} for {user}')
+                else:
+                    logger.error(f"request failed {url_postfix} for {user}: {response.status_code}, {response.text}")
+                return response
+            except (httpx.RequestError, httpx.HTTPError) as e:
+                logger.error(f"request failed {url_postfix} for {user}: {e}")
+                raise
+
+    async def create_and_send_notify_temporary_register_token(self, user: UserModel):
+        temporary_token = await create_temporary_register_token(user)
+        headers = {'Authorization': settings.SERVICE_TO_SERVICE_SECRET, 'Service-Name': settings.PROJECT_NAME}
+        user_confirmation_link = (
+            f"http://localhost:{settings.API_AUTH_PORT}/api/v1/auth/confirm-email/{temporary_token}"
+            if config.DEBUG else f"https://cinema.online/confirm-email/{temporary_token}"
+        )
+        body = {
+            'email_to': user.email,
+            'msg_text': f"Hello, {user.name}, welcome and thank you for registration at 'cinema.online'."
+                        f"Here is your link to confirm your email: {user_confirmation_link}"
+        }
+        url_postfix = 'api/v1/services-notifications/send-email'
+        url = f"{config.API_NOTIFICATIONS_HTTP_PREFIX}/{url_postfix}"
+        return await self.send_service_request_post(url, url_postfix, headers, body, user)
+
+    async def send_duplicate_user_request_to_notifications_service(self, user: UserModel):
+        headers = {'Authorization': settings.SERVICE_TO_SERVICE_SECRET,
+                   'Service-Name': settings.PROJECT_NAME}
+        body = {'user_uuid': user.uuid,
+                'user_email': user.email}
+        url_postfix = 'api/v1/services-users/duplicate-user'
+        url = f"{config.API_NOTIFICATIONS_HTTP_PREFIX}/{url_postfix}"
+        return await self.send_service_request_post(url, url_postfix, headers, body, user)
+
     async def register(self, user_ser: UserCreateSerializer):
-        user = await self.repo.create_user(user_ser)
-        registered_role = await self.repo.get(RoleModel, name=RolesNamesEnum.registered)
-        user.roles.append(registered_role)
-        await self.repo.session.commit()
-        await self.repo.session.refresh(user)
-        return user
+        try:
+            # async with self.repo.session.begin():
+            user: UserModel = await self.repo.create_user(user_ser)
+            registered_role = await self.repo.get(RoleModel, name=RolesNamesEnum.registered)
+            user.roles.append(registered_role)
+            await self.repo.session.commit()
+            await self.repo.session.refresh(user)
+            resp = await self.send_duplicate_user_request_to_notifications_service(user)
+            if resp.status_code != fa.status.HTTP_200_OK:
+                raise UserWasNotRegisteredException
+            resp = await self.create_and_send_notify_temporary_register_token(user)
+            if resp.status_code != fa.status.HTTP_200_OK:
+                raise UserWasNotRegisteredException
+            logger.debug(f'creation and registration completed: {user=:}')
+            return user
+        except Exception as e:
+            await self.repo.session.rollback()
+            logger.debug(f'creation and registration failed: {user_ser=:}, {e}')
+            raise
+
+    async def confirm_email(self, register_token):
+        token_schema = TokenReadSchema.from_jwt(register_token)
+        user = await self.repo.get(UserModel, email=token_schema.email)
+        if dt.datetime.utcnow() <= token_schema.exp:
+            user = await self.repo.update(user, {'is_active': True})
+            return user
+        await self.send_duplicate_user_request_to_notifications_service(user)
+        await self.create_and_send_notify_temporary_register_token(user)
+        raise UnauthorizedException("can't confirm this email, token expired, new token was sent to your email")
