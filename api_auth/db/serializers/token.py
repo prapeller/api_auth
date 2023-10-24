@@ -15,14 +15,14 @@ class TokenCreateSchema(pd.BaseModel):
     email: pd.EmailStr  # user.email
     permissions: list[PermissionsNamesEnum] = []  # user.permissions_names
 
-    session_uuid: str  # session.id
-    ip: str  # sesion.ip
-    useragent: str  # session.useragent
+    session_uuid: str | None = None  # session.id
+    ip: str | None = None  # sesion.ip
+    useragent: str | None = None  # session.useragent
 
     exp: dt.datetime  # expiration time
 
-    oauth_type: OAuthTypesEnum
-    oauth_token: str
+    oauth_type: OAuthTypesEnum = OAuthTypesEnum.local
+    oauth_token: str | None = None
 
 
 class TokenReadSchema(TokenCreateSchema):
@@ -33,6 +33,7 @@ class TokenReadSchema(TokenCreateSchema):
         decoded_jwt: dict | None = get_token_data(encoded_jwt)
         if decoded_jwt is None:
             return None
+        decoded_jwt['exp'] = dt.datetime.fromtimestamp(decoded_jwt['exp'])
         object_setattr(m, '__dict__', decoded_jwt)
         object_setattr(m, '__fields_set__', cls.__fields_set__)
         m._init_private_attributes()

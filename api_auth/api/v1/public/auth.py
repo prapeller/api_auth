@@ -3,6 +3,8 @@ from copy import copy
 from typing import Annotated
 
 import fastapi as fa
+from fastapi.security import OAuth2PasswordRequestForm
+
 from core.dependencies import auth_manager_dependency, sql_alchemy_repo_dependency
 from core.enums import ResponseDetailEnum, OAuthTypesEnum
 from core.exceptions import UnauthorizedException
@@ -108,6 +110,15 @@ async def login_oauth(
     stored_state = secrets.token_urlsafe(16)
     redirect_uri_with_state = await get_redirect_uri_with_state(oauth_type, stored_state)
     return fa.responses.RedirectResponse(redirect_uri_with_state)
+
+
+@router.get('/confirm-email/{register_token}')
+async def confirm_email(
+        register_token: str,
+        auth_manager: AuthManager = fa.Depends(auth_manager_dependency),
+
+):
+    return await auth_manager.confirm_email(register_token)
 
 
 @router.get('/oauth-redirect/{oauth_type}')

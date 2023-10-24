@@ -13,10 +13,10 @@ class BadRequestException(fa.HTTPException):
 
 
 class UnauthorizedException(fa.HTTPException):
-    def __init__(self):
+    def __init__(self, detail=None):
         super().__init__(
             status_code=fa.status.HTTP_401_UNAUTHORIZED,
-            detail=ResponseDetailEnum.unauthorized,
+            detail=ResponseDetailEnum.unauthorized if detail is None else detail,
             headers={'WWW-Authenticate': 'Bearer'},
         )
 
@@ -35,5 +35,14 @@ class UserAlreadyExistsException(fa.HTTPException):
         super().__init__(
             status_code=fa.status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=ResponseDetailEnum.user_already_exists,
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
+
+class UserWasNotRegisteredException(fa.HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=fa.status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=ResponseDetailEnum.user_was_not_registered,
             headers={'WWW-Authenticate': 'Bearer'},
         )

@@ -4,6 +4,8 @@ import string
 from functools import wraps
 
 import jwt
+
+from core import config
 from core.config import settings
 from core.enums import PermissionsNamesEnum
 from core.exceptions import UnauthorizedException
@@ -19,7 +21,7 @@ def generate_password(length=12):
 
 def get_token_data(encoded_jwt_local: str) -> dict | None:
     try:
-        return jwt.decode(encoded_jwt_local, settings.AUTH_SECRET, algorithms=settings.TOKEN_ENCODE_ALGORITHM)
+        return jwt.decode(encoded_jwt_local, settings.AUTH_SECRET, algorithms=config.TOKEN_ENCODE_ALGORITHM)
     except jwt.ExpiredSignatureError:  # Token has expired
         return None
     except jwt.InvalidTokenError:  # Invalid token

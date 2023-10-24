@@ -138,20 +138,6 @@ class SqlAlchemyRepositoryAsync(DBRepository):
         await self.session.refresh(obj)
         return obj
 
-        # obj_data = json.loads(json.dumps(obj, cls=CustomEncoder))
-        # for obj_data_field in obj_data:
-        #     field = obj_data_field.strip('_')
-        #     if field in update_data:
-        #         setattr(obj, field, update_data[field])
-        # self.session.add(obj)
-        # try:
-        #     await self.session.commit()
-        # except IntegrityError as e:
-        #     await self.session.rollback()
-        #     raise ValueError(f'Error while updating {obj=:}: {str(e)}')
-        # await self.session.refresh(obj)
-        # return obj
-
     async def remove(self, Model: type[sa_BaseModel], id) -> None:
         obj = await self.get(Model, id=id)
         if obj is None:

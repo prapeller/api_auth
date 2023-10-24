@@ -10,6 +10,11 @@ class Settings(pd.BaseSettings):
     API_AUTH_HOST: str
     API_AUTH_PORT: int
 
+    SERVICE_TO_SERVICE_SECRET: str
+
+    API_NOTIFICATIONS_HOST: str
+    API_NOTIFICATIONS_PORT: int
+
     JAEGER_HOST: str
     JAEGER_PORT: int
 
@@ -25,10 +30,6 @@ class Settings(pd.BaseSettings):
     AUTH_SECRET: str
 
     DOCS_URL: str
-
-    ACCESS_TOKEN_EXP_MIN: int = 15
-    REFRESH_TOKEN_EXP_MIN: int = 60 * 24 * 30
-    TOKEN_ENCODE_ALGORITHM: str = 'HS256'
 
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
@@ -57,3 +58,9 @@ DEBUG = True if os.getenv('DEBUG', 'False') == 'True' else False
 DOCKER = True if os.getenv('DOCKER', 'False') == 'True' else False
 
 settings = Settings(DOCKER, DEBUG, BASE_DIR)
+
+ACCESS_TOKEN_EXP_MIN: int = 15
+REFRESH_TOKEN_EXP_MIN: int = 60 * 24 * 30
+TEMPORARY_REGISTER_TOKEN_EXP_MIN: int = 60 * 3
+TOKEN_ENCODE_ALGORITHM: str = 'HS256'
+API_NOTIFICATIONS_HTTP_PREFIX: str = f'http://{settings.API_NOTIFICATIONS_HOST}:{settings.API_NOTIFICATIONS_PORT}'

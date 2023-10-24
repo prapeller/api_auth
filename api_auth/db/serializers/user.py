@@ -28,6 +28,7 @@ class UserUpdateSerializer(pd.BaseModel):
 class UserCreateSerializer(UserUpdateSerializer):
     email: pd.EmailStr
     password: str
+    is_active: bool = False
 
 
 class UserReadSerializer(pd.BaseModel):

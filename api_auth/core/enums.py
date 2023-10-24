@@ -23,6 +23,7 @@ class ResponseDetailEnum(str, Enum):
     unauthorized = 'Unauthorized for this action.'
     invalid_credentials = 'Invalid credentials were provided.'
     user_already_exists = 'User with these credentials already exists.'
+    user_was_not_registered = 'User was not registered.'
 
 
 class RolesNamesEnum(str, Enum):
@@ -42,6 +43,7 @@ class RolesNamesEnum(str, Enum):
 class TokenTypesEnum(str, Enum):
     access = 'access'
     refresh = 'refresh'
+    register = 'register'
 
     def __str__(self):
         return self.value
