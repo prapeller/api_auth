@@ -235,7 +235,8 @@ class AuthManager():
 
     async def create_and_send_notify_temporary_register_token(self, user: UserModel):
         temporary_token = await create_temporary_register_token(user)
-        headers = {'Authorization': settings.SERVICE_TO_SERVICE_SECRET, 'Service-Name': settings.PROJECT_NAME}
+        headers = {'Authorization': settings.SERVICE_TO_SERVICE_SECRET,
+                   'Service-Name': settings.PROJECT_NAME}
         user_confirmation_link = (
             f"http://localhost:{settings.API_AUTH_PORT}/api/v1/auth/confirm-email/{temporary_token}"
             if config.DEBUG else f"https://cinema.online/confirm-email/{temporary_token}"
