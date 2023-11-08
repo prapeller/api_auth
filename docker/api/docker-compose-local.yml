@@ -44,9 +44,9 @@ services:
       - local_network_auth
       - shared_network
     expose:
-      - "8081"
+      - "8087"
     ports:
-      - "8081:8081"
+      - "8087:8087"
 
   nginx_auth:
     restart: always
