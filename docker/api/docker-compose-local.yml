@@ -61,11 +61,6 @@ services:
       - media_files_auth_volume:/app/mediafiles
     depends_on:
       - api_auth
-    healthcheck:
-      test: ["CMD", "nc", "-z", "nginx_auth", "81"]
-      interval: 3s
-      timeout: 10s
-      retries: 3
     network_mode: host
 
 #  jaeger_auth:
